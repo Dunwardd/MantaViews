@@ -1,18 +1,18 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
 
 import { AppProviders } from '@/providers/app-providers';
-import { brandColors } from '@/theme/colors';
+import { brandColors, colors } from '@/theme/colors';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const baseTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
   const navigationTheme = {
-    ...baseTheme,
+    ...DefaultTheme,
     colors: {
-      ...baseTheme.colors,
+      ...DefaultTheme.colors,
+      background: colors.background,
+      card: colors.background,
+      text: colors.label,
       primary: brandColors.primary,
       notification: brandColors.sun,
     },
@@ -28,9 +28,10 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="index" options={{ headerShown: false }} />
         </Stack>
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
       </ThemeProvider>
     </AppProviders>
   );

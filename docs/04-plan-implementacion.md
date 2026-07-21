@@ -43,71 +43,82 @@ Criterio de aceptación: las tres personas pueden acceder a los servicios y cono
 - [x] Instalar dependencias compatibles usando `npx expo install` cuando corresponda.
 - [x] Configurar TanStack Query con caché y reintentos controlados.
 - [x] Configurar Supabase client y persistencia segura de sesión.
-- [-] Confirmar que el proyecto abre en Expo Go Android e iOS disponibles. Metro genera el QR; falta escanearlo en dispositivos físicos.
+- [x] Confirmar que el proyecto abre en Expo Go sobre un dispositivo Android físico.
+- [ ] Confirmar que el proyecto abre en un dispositivo iOS disponible.
 - [x] Confirmar que Expo Web compila.
 
 Criterio de aceptación: app vacía ejecutándose en móvil y web, lint/typecheck exitosos y ningún secreto versionado.
 
 ## 5. Fase 2 — Base de datos Supabase
 
-- [ ] Crear proyecto Supabase en la región apropiada.
-- [ ] Habilitar `postgis`, `pgcrypto` y `pg_trgm`.
-- [ ] Crear migración de enums.
-- [ ] Crear tablas de usuarios: `profiles`, `user_roles`, `user_interests`.
-- [ ] Crear tablas de catálogo: `categories`, `category_translations`.
-- [ ] Crear tablas de lugares: `places`, `place_translations`, `place_images`.
-- [ ] Crear tablas sociales: `reviews`, `favorites`, `tourist_votes`.
-- [ ] Crear tablas de comunidad: `place_suggestions`, `reports`.
-- [ ] Crear `admin_audit_logs`.
-- [ ] Añadir claves foráneas, checks y restricciones unique.
-- [ ] Crear índices B-tree, GiST y trigram.
-- [ ] Crear trigger reutilizable de `updated_at`.
-- [ ] Crear trigger de perfil/rol al registrarse un usuario.
-- [ ] Crear vista `place_stats` con `security_invoker`.
-- [ ] Crear función protegida `is_admin`.
-- [ ] Crear RPC `search_places`.
-- [ ] Crear RPC `nearby_places`.
-- [ ] Crear RPC `get_place_detail`.
-- [ ] Crear RPC `get_recommendations`.
-- [ ] Sembrar categorías en español e inglés.
+- [x] Crear proyecto Supabase Cloud en South America (São Paulo).
+- [x] Vincular la CLI local con el proyecto cloud `MantaViews`.
+- [x] Inicializar Supabase CLI como dependencia local y versionar `supabase/config.toml`.
+- [x] Habilitar `postgis`, `pgcrypto` y `pg_trgm` mediante migración.
+- [x] Crear migración de enums.
+- [x] Crear tablas de usuarios: `profiles`, `user_roles`, `user_interests`.
+- [x] Crear tablas de catálogo: `categories`, `category_translations`.
+- [x] Crear tablas de lugares: `places`, `place_translations`, `place_images`.
+- [x] Crear tablas sociales: `reviews`, `favorites`, `tourist_votes`.
+- [x] Crear tablas de comunidad: `place_suggestions`, `reports`.
+- [x] Crear `admin_audit_logs`.
+- [x] Añadir claves foráneas, checks y restricciones unique.
+- [x] Crear índices B-tree, GiST y trigram.
+- [x] Crear trigger reutilizable de `updated_at`.
+- [x] Crear trigger de perfil/rol al registrarse un usuario.
+- [x] Crear vista `place_stats` con `security_invoker`.
+- [x] Crear función protegida `is_admin`.
+- [x] Crear RPC `search_places`.
+- [x] Crear RPC `nearby_places`.
+- [x] Crear RPC `get_place_detail`.
+- [x] Crear RPC `get_recommendations`.
+- [x] Sembrar nueve categorías en español e inglés.
+- [x] Publicar las migraciones y el seed bilingüe en Supabase Cloud.
 - [ ] Crear usuario administrador inicial de forma segura.
-- [ ] Ejecutar migraciones desde una base limpia para validar reproducibilidad.
+- [x] Ejecutar migraciones y seed desde una base local limpia para validar reproducibilidad.
+- [x] Ejecutar 18 pruebas SQL, incluida una prueba de distancia PostGIS.
+- [x] Ejecutar lint sobre los esquemas propios `public` y `private` sin errores.
+- [x] Confirmar que el historial de migraciones local y cloud coincide.
 
 Criterio de aceptación: esquema recreable, restricciones comprobadas y consultas geográficas devolviendo distancias correctas.
 
 ## 6. Fase 3 — Seguridad, RLS y Storage
 
-- [ ] Activar RLS explícitamente en todas las tablas públicas.
-- [ ] Crear políticas de lectura pública para contenido publicado.
-- [ ] Crear políticas de lectura/escritura del perfil propio.
-- [ ] Crear políticas de reseñas propias.
-- [ ] Crear políticas de favoritos propios.
-- [ ] Crear políticas de votos propios.
-- [ ] Crear políticas de intereses propios.
-- [ ] Crear políticas de sugerencias y reportes propios.
-- [ ] Bloquear escrituras del cliente en `user_roles` y auditoría.
-- [ ] Crear políticas administrativas usando `is_admin`.
-- [ ] Crear buckets `avatars` y `place-images`.
-- [ ] Limitar rutas de Storage por `user_id`.
-- [ ] Limitar MIME y tamaño máximo de imágenes.
-- [ ] Verificar que `service_role` no esté en `.env` público ni en el repositorio.
-- [ ] Probar acceso invitado, usuario A, usuario B y administrador.
+- [x] Activar RLS explícitamente en todas las tablas públicas.
+- [x] Crear políticas de lectura pública para contenido publicado.
+- [x] Crear políticas de lectura/escritura del perfil propio.
+- [x] Crear políticas de reseñas propias.
+- [x] Crear políticas de favoritos propios.
+- [x] Crear políticas de votos propios.
+- [x] Crear políticas de intereses propios.
+- [x] Crear políticas de sugerencias y reportes propios.
+- [x] Bloquear escrituras del cliente en `user_roles` y auditoría.
+- [x] Crear políticas administrativas usando `is_admin`.
+- [x] Crear buckets `avatars` y `place-images`.
+- [x] Limitar rutas de Storage por `user_id`.
+- [x] Limitar MIME y tamaño máximo de imágenes.
+- [x] Verificar que `service_role` no esté en `.env` público ni en el repositorio.
+- [x] Probar acceso invitado, usuario A, usuario B y administrador.
+- [x] Publicar la migración de seguridad y Storage en Supabase Cloud.
+- [x] Confirmar historial local/cloud y lint remoto sin errores.
 
 Criterio de aceptación: un usuario no puede leer ni modificar recursos privados de otro, y ningún cliente puede asignarse privilegios.
 
 ## 7. Fase 4 — Autenticación
 
-- [ ] Configurar registro por correo y contraseña.
-- [ ] Configurar confirmación de correo según necesidades de la demo.
-- [ ] Implementar login y cierre de sesión.
-- [ ] Implementar recuperación y cambio de contraseña.
-- [ ] Restaurar/refrescar sesión al abrir la app.
-- [ ] Crear provider/hook de sesión.
-- [ ] Implementar rutas protegidas y guard de acciones contextuales.
+- [x] Configurar registro por correo y contraseña.
+- [x] Configurar confirmación de correo según necesidades de la demo.
+- [x] Implementar login y cierre de sesión.
+- [x] Implementar recuperación y cambio de contraseña.
+- [x] Restaurar/refrescar sesión al abrir la app.
+- [x] Crear provider/hook de sesión.
+- [x] Implementar rutas protegidas y guard de acciones contextuales.
 - [ ] Configurar Google OAuth en Supabase.
 - [ ] Configurar esquema y redirect URI para development build/web.
 - [ ] Probar Google OAuth fuera de Expo Go.
-- [ ] Limpiar caché privada al cerrar sesión.
+- [x] Limpiar caché privada al cerrar sesión.
+- [x] Verificar en Cloud que email, registro y confirmación están habilitados.
+- [x] Validar visualmente login, registro, guard y perfil invitado en web.
 
 Criterio de aceptación: email/password completo y sesión persistente; Google probado en una plataforma de presentación si forma parte del MVP.
 

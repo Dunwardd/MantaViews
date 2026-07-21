@@ -1,0 +1,8 @@
+.expo
+dist
+node_modules
+.npm-cache
+manta-views-scaffold
+package-lock.json
+supabase/.branches
+supabase/.temp

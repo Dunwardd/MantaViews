@@ -1,7 +1,8 @@
 import 'react-native-url-polyfill/auto';
 
 import * as SecureStore from 'expo-secure-store';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, processLock, type SupabaseClient } from '@supabase/supabase-js';
+import { AppState, type NativeEventSubscription } from 'react-native';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -15,6 +16,7 @@ const secureStorage = {
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
 
 let client: SupabaseClient | undefined;
+let appStateSubscription: NativeEventSubscription | undefined;
 
 export function getSupabaseClient() {
   if (!supabaseUrl || !supabasePublishableKey) {
@@ -23,14 +25,27 @@ export function getSupabaseClient() {
     );
   }
 
-  client ??= createClient(supabaseUrl, supabasePublishableKey, {
-    auth: {
-      ...(process.env.EXPO_OS === 'web' ? {} : { storage: secureStorage }),
-      autoRefreshToken: true,
-      detectSessionInUrl: process.env.EXPO_OS === 'web',
-      persistSession: true,
-    },
-  });
+  if (!client) {
+    client = createClient(supabaseUrl, supabasePublishableKey, {
+      auth: {
+        ...(process.env.EXPO_OS === 'web' ? {} : { storage: secureStorage }),
+        autoRefreshToken: true,
+        detectSessionInUrl: process.env.EXPO_OS === 'web',
+        lock: processLock,
+        persistSession: true,
+      },
+    });
+
+    if (process.env.EXPO_OS !== 'web' && !appStateSubscription) {
+      appStateSubscription = AppState.addEventListener('change', (state) => {
+        if (state === 'active') {
+          client?.auth.startAutoRefresh();
+        } else {
+          client?.auth.stopAutoRefresh();
+        }
+      });
+    }
+  }
 
   return client;
 }

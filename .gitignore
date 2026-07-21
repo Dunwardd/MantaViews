@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Generated native folders
+/android/
+/ios/
+.kotlin/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Local caches and scaffold
+.npm-cache/
+manta-views-scaffold/
+sdk54-reference/
+
+# Credentials
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+
+# Tooling and OS
+.DS_Store
+*.tsbuildinfo
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.metro-health-check*
+*.orig.*
