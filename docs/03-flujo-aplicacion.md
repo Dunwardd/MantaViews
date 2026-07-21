@@ -293,4 +293,3 @@ El frontend nunca considera suficiente ocultar botones: cada operación se vuelv
 3. Limpiar datos privados de la caché.
 4. Conservar únicamente idioma y preferencias no sensibles.
 5. Regresar a Explorar como invitado.
-

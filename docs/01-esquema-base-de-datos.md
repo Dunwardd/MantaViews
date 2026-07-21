@@ -82,48 +82,48 @@ create type public.report_status as enum (
 
 Información pública y preferencias básicas del usuario. Comparte el UUID con `auth.users`.
 
-| Columna | Tipo | Reglas |
-|---|---|---|
-| `id` | `uuid` | PK, FK `auth.users(id)`, cascade |
-| `display_name` | `varchar(80)` | obligatorio |
-| `avatar_path` | `text` | nullable; ruta en Storage |
-| `preferred_language` | `varchar(2)` | `es` o `en`, default `es` |
-| `created_at` | `timestamptz` | default `now()` |
-| `updated_at` | `timestamptz` | actualizado por trigger |
+| Columna              | Tipo          | Reglas                           |
+| -------------------- | ------------- | -------------------------------- |
+| `id`                 | `uuid`        | PK, FK `auth.users(id)`, cascade |
+| `display_name`       | `varchar(80)` | obligatorio                      |
+| `avatar_path`        | `text`        | nullable; ruta en Storage        |
+| `preferred_language` | `varchar(2)`  | `es` o `en`, default `es`        |
+| `created_at`         | `timestamptz` | default `now()`                  |
+| `updated_at`         | `timestamptz` | actualizado por trigger          |
 
 ### 5.2 `user_roles`
 
 Rol protegido del usuario. No debe existir una política que permita al usuario editar su propio rol.
 
-| Columna | Tipo | Reglas |
-|---|---|---|
-| `user_id` | `uuid` | PK, FK `auth.users(id)`, cascade |
-| `role` | `app_role` | default `user` |
-| `assigned_at` | `timestamptz` | default `now()` |
-| `assigned_by` | `uuid` | FK `auth.users(id)`, nullable |
+| Columna       | Tipo          | Reglas                           |
+| ------------- | ------------- | -------------------------------- |
+| `user_id`     | `uuid`        | PK, FK `auth.users(id)`, cascade |
+| `role`        | `app_role`    | default `user`                   |
+| `assigned_at` | `timestamptz` | default `now()`                  |
+| `assigned_by` | `uuid`        | FK `auth.users(id)`, nullable    |
 
 ### 5.3 `categories`
 
 Catálogo de categorías turísticas.
 
-| Columna | Tipo | Reglas |
-|---|---|---|
-| `id` | `smallint generated always as identity` | PK |
-| `slug` | `varchar(50)` | unique; p. ej. `playas` |
-| `icon` | `varchar(50)` | nombre lógico del icono |
-| `color` | `varchar(7)` | formato hexadecimal |
-| `sort_order` | `smallint` | default `0` |
-| `is_active` | `boolean` | default `true` |
+| Columna      | Tipo                                    | Reglas                  |
+| ------------ | --------------------------------------- | ----------------------- |
+| `id`         | `smallint generated always as identity` | PK                      |
+| `slug`       | `varchar(50)`                           | unique; p. ej. `playas` |
+| `icon`       | `varchar(50)`                           | nombre lógico del icono |
+| `color`      | `varchar(7)`                            | formato hexadecimal     |
+| `sort_order` | `smallint`                              | default `0`             |
+| `is_active`  | `boolean`                               | default `true`          |
 
 Valores iniciales: playas, restaurantes, hoteles, museos, vida nocturna, parques, monumentos, centros comerciales y actividades.
 
 ### 5.4 `category_translations`
 
-| Columna | Tipo | Reglas |
-|---|---|---|
-| `category_id` | `smallint` | FK `categories(id)`, cascade |
-| `locale` | `varchar(2)` | `es` o `en` |
-| `name` | `varchar(80)` | obligatorio |
+| Columna       | Tipo          | Reglas                       |
+| ------------- | ------------- | ---------------------------- |
+| `category_id` | `smallint`    | FK `categories(id)`, cascade |
+| `locale`      | `varchar(2)`  | `es` o `en`                  |
+| `name`        | `varchar(80)` | obligatorio                  |
 
 PK compuesta: (`category_id`, `locale`).
 
@@ -131,22 +131,22 @@ PK compuesta: (`category_id`, `locale`).
 
 Datos independientes del idioma para cada lugar.
 
-| Columna | Tipo | Reglas |
-|---|---|---|
-| `id` | `uuid` | PK, default `gen_random_uuid()` |
-| `category_id` | `smallint` | FK `categories(id)` |
-| `created_by` | `uuid` | FK `auth.users(id)`, nullable para seed |
-| `status` | `content_status` | default `pending` |
-| `location` | `geography(Point,4326)` | obligatorio |
-| `address` | `varchar(250)` | obligatorio |
-| `phone` | `varchar(30)` | nullable |
-| `website_url` | `text` | nullable, validar HTTPS |
-| `opening_hours` | `jsonb` | default `{}` |
-| `price_level` | `smallint` | nullable, rango 0–4 |
-| `is_featured` | `boolean` | default `false`, solo admin |
-| `created_at` | `timestamptz` | default `now()` |
-| `updated_at` | `timestamptz` | trigger |
-| `published_at` | `timestamptz` | nullable |
+| Columna         | Tipo                    | Reglas                                  |
+| --------------- | ----------------------- | --------------------------------------- |
+| `id`            | `uuid`                  | PK, default `gen_random_uuid()`         |
+| `category_id`   | `smallint`              | FK `categories(id)`                     |
+| `created_by`    | `uuid`                  | FK `auth.users(id)`, nullable para seed |
+| `status`        | `content_status`        | default `pending`                       |
+| `location`      | `geography(Point,4326)` | obligatorio                             |
+| `address`       | `varchar(250)`          | obligatorio                             |
+| `phone`         | `varchar(30)`           | nullable                                |
+| `website_url`   | `text`                  | nullable, validar HTTPS                 |
+| `opening_hours` | `jsonb`                 | default `{}`                            |
+| `price_level`   | `smallint`              | nullable, rango 0–4                     |
+| `is_featured`   | `boolean`               | default `false`, solo admin             |
+| `created_at`    | `timestamptz`           | default `now()`                         |
+| `updated_at`    | `timestamptz`           | trigger                                 |
+| `published_at`  | `timestamptz`           | nullable                                |
 
 Ejemplo de `opening_hours`:
 
@@ -160,76 +160,76 @@ Ejemplo de `opening_hours`:
 
 ### 5.6 `place_translations`
 
-| Columna | Tipo | Reglas |
-|---|---|---|
-| `place_id` | `uuid` | FK `places(id)`, cascade |
-| `locale` | `varchar(2)` | `es` o `en` |
-| `name` | `varchar(150)` | obligatorio |
-| `short_description` | `varchar(280)` | obligatorio |
-| `description` | `text` | obligatorio, máximo definido por API |
+| Columna             | Tipo           | Reglas                               |
+| ------------------- | -------------- | ------------------------------------ |
+| `place_id`          | `uuid`         | FK `places(id)`, cascade             |
+| `locale`            | `varchar(2)`   | `es` o `en`                          |
+| `name`              | `varchar(150)` | obligatorio                          |
+| `short_description` | `varchar(280)` | obligatorio                          |
+| `description`       | `text`         | obligatorio, máximo definido por API |
 
 PK compuesta: (`place_id`, `locale`). Todo lugar publicado debe tener traducción `es`; `en` puede completarse antes de la presentación.
 
 ### 5.7 `reviews`
 
-| Columna | Tipo | Reglas |
-|---|---|---|
-| `id` | `uuid` | PK |
-| `place_id` | `uuid` | FK `places(id)`, cascade |
-| `user_id` | `uuid` | FK `profiles(id)`, cascade |
-| `rating` | `smallint` | entre 1 y 5 |
-| `comment` | `varchar(1000)` | entre 3 y 1000 caracteres |
-| `status` | `content_status` | default `published`; puede moderarse/archivarse |
-| `created_at` | `timestamptz` | default `now()` |
-| `updated_at` | `timestamptz` | trigger |
+| Columna      | Tipo             | Reglas                                          |
+| ------------ | ---------------- | ----------------------------------------------- |
+| `id`         | `uuid`           | PK                                              |
+| `place_id`   | `uuid`           | FK `places(id)`, cascade                        |
+| `user_id`    | `uuid`           | FK `profiles(id)`, cascade                      |
+| `rating`     | `smallint`       | entre 1 y 5                                     |
+| `comment`    | `varchar(1000)`  | entre 3 y 1000 caracteres                       |
+| `status`     | `content_status` | default `published`; puede moderarse/archivarse |
+| `created_at` | `timestamptz`    | default `now()`                                 |
+| `updated_at` | `timestamptz`    | trigger                                         |
 
 Restricción unique: (`place_id`, `user_id`). El usuario edita su reseña existente en vez de crear varias.
 
 ### 5.8 `place_images`
 
-| Columna | Tipo | Reglas |
-|---|---|---|
-| `id` | `uuid` | PK |
-| `place_id` | `uuid` | FK `places(id)`, cascade |
-| `review_id` | `uuid` | FK `reviews(id)`, nullable |
-| `uploader_id` | `uuid` | FK `profiles(id)`, nullable para seed admin |
-| `storage_path` | `text` | unique |
-| `alt_text` | `varchar(180)` | accesibilidad |
-| `status` | `content_status` | default `pending` |
-| `is_cover` | `boolean` | default `false`, solo admin |
-| `created_at` | `timestamptz` | default `now()` |
+| Columna        | Tipo             | Reglas                                      |
+| -------------- | ---------------- | ------------------------------------------- |
+| `id`           | `uuid`           | PK                                          |
+| `place_id`     | `uuid`           | FK `places(id)`, cascade                    |
+| `review_id`    | `uuid`           | FK `reviews(id)`, nullable                  |
+| `uploader_id`  | `uuid`           | FK `profiles(id)`, nullable para seed admin |
+| `storage_path` | `text`           | unique                                      |
+| `alt_text`     | `varchar(180)`   | accesibilidad                               |
+| `status`       | `content_status` | default `pending`                           |
+| `is_cover`     | `boolean`        | default `false`, solo admin                 |
+| `created_at`   | `timestamptz`    | default `now()`                             |
 
 Solo puede existir una portada publicada por lugar.
 
 ### 5.9 `favorites`
 
-| Columna | Tipo | Reglas |
-|---|---|---|
-| `user_id` | `uuid` | FK `profiles(id)`, cascade |
-| `place_id` | `uuid` | FK `places(id)`, cascade |
-| `created_at` | `timestamptz` | default `now()` |
+| Columna      | Tipo          | Reglas                     |
+| ------------ | ------------- | -------------------------- |
+| `user_id`    | `uuid`        | FK `profiles(id)`, cascade |
+| `place_id`   | `uuid`        | FK `places(id)`, cascade   |
+| `created_at` | `timestamptz` | default `now()`            |
 
 PK compuesta: (`user_id`, `place_id`).
 
 ### 5.10 `tourist_votes`
 
-| Columna | Tipo | Reglas |
-|---|---|---|
-| `user_id` | `uuid` | FK `profiles(id)`, cascade |
-| `place_id` | `uuid` | FK `places(id)`, cascade |
-| `is_touristic` | `boolean` | sí/no |
-| `created_at` | `timestamptz` | default `now()` |
-| `updated_at` | `timestamptz` | trigger |
+| Columna        | Tipo          | Reglas                     |
+| -------------- | ------------- | -------------------------- |
+| `user_id`      | `uuid`        | FK `profiles(id)`, cascade |
+| `place_id`     | `uuid`        | FK `places(id)`, cascade   |
+| `is_touristic` | `boolean`     | sí/no                      |
+| `created_at`   | `timestamptz` | default `now()`            |
+| `updated_at`   | `timestamptz` | trigger                    |
 
 PK compuesta: (`user_id`, `place_id`). Los votos informan al administrador, pero no publican ni eliminan lugares automáticamente.
 
 ### 5.11 `user_interests`
 
-| Columna | Tipo | Reglas |
-|---|---|---|
-| `user_id` | `uuid` | FK `profiles(id)`, cascade |
+| Columna       | Tipo       | Reglas                       |
+| ------------- | ---------- | ---------------------------- |
+| `user_id`     | `uuid`     | FK `profiles(id)`, cascade   |
 | `category_id` | `smallint` | FK `categories(id)`, cascade |
-| `weight` | `smallint` | 1–5, default `1` |
+| `weight`      | `smallint` | 1–5, default `1`             |
 
 PK compuesta: (`user_id`, `category_id`).
 
@@ -237,53 +237,53 @@ PK compuesta: (`user_id`, `category_id`).
 
 Lugar propuesto por un usuario para revisión administrativa.
 
-| Columna | Tipo | Reglas |
-|---|---|---|
-| `id` | `uuid` | PK |
-| `submitted_by` | `uuid` | FK `profiles(id)` |
-| `category_id` | `smallint` | FK `categories(id)` |
-| `location` | `geography(Point,4326)` | ubicación propuesta |
-| `name` | `varchar(150)` | obligatorio |
-| `description` | `varchar(1500)` | obligatorio |
-| `address` | `varchar(250)` | obligatorio |
-| `evidence_url` | `text` | nullable |
-| `status` | `content_status` | default `pending` |
-| `reviewed_by` | `uuid` | FK `auth.users(id)`, nullable |
-| `review_notes` | `varchar(500)` | nullable |
-| `created_at` | `timestamptz` | default `now()` |
-| `reviewed_at` | `timestamptz` | nullable |
+| Columna        | Tipo                    | Reglas                        |
+| -------------- | ----------------------- | ----------------------------- |
+| `id`           | `uuid`                  | PK                            |
+| `submitted_by` | `uuid`                  | FK `profiles(id)`             |
+| `category_id`  | `smallint`              | FK `categories(id)`           |
+| `location`     | `geography(Point,4326)` | ubicación propuesta           |
+| `name`         | `varchar(150)`          | obligatorio                   |
+| `description`  | `varchar(1500)`         | obligatorio                   |
+| `address`      | `varchar(250)`          | obligatorio                   |
+| `evidence_url` | `text`                  | nullable                      |
+| `status`       | `content_status`        | default `pending`             |
+| `reviewed_by`  | `uuid`                  | FK `auth.users(id)`, nullable |
+| `review_notes` | `varchar(500)`          | nullable                      |
+| `created_at`   | `timestamptz`           | default `now()`               |
+| `reviewed_at`  | `timestamptz`           | nullable                      |
 
 Al aprobar una sugerencia se crea un `place`; no se convierte la fila directamente.
 
 ### 5.13 `reports`
 
-| Columna | Tipo | Reglas |
-|---|---|---|
-| `id` | `uuid` | PK |
-| `reporter_id` | `uuid` | FK `profiles(id)` |
-| `target_type` | `report_target` | lugar, reseña o imagen |
-| `target_id` | `uuid` | existencia validada por backend |
-| `reason` | `report_reason` | obligatorio |
-| `details` | `varchar(500)` | nullable |
-| `status` | `report_status` | default `open` |
-| `reviewed_by` | `uuid` | FK `auth.users(id)`, nullable |
-| `created_at` | `timestamptz` | default `now()` |
-| `resolved_at` | `timestamptz` | nullable |
+| Columna       | Tipo            | Reglas                          |
+| ------------- | --------------- | ------------------------------- |
+| `id`          | `uuid`          | PK                              |
+| `reporter_id` | `uuid`          | FK `profiles(id)`               |
+| `target_type` | `report_target` | lugar, reseña o imagen          |
+| `target_id`   | `uuid`          | existencia validada por backend |
+| `reason`      | `report_reason` | obligatorio                     |
+| `details`     | `varchar(500)`  | nullable                        |
+| `status`      | `report_status` | default `open`                  |
+| `reviewed_by` | `uuid`          | FK `auth.users(id)`, nullable   |
+| `created_at`  | `timestamptz`   | default `now()`                 |
+| `resolved_at` | `timestamptz`   | nullable                        |
 
 ### 5.14 `admin_audit_logs`
 
 Registro inmutable de acciones administrativas.
 
-| Columna | Tipo | Reglas |
-|---|---|---|
-| `id` | `bigint generated always as identity` | PK |
-| `admin_id` | `uuid` | FK `auth.users(id)` |
-| `action` | `varchar(80)` | p. ej. `place.publish` |
-| `target_type` | `varchar(40)` | tipo de recurso |
-| `target_id` | `uuid` | recurso afectado |
-| `before_data` | `jsonb` | nullable |
-| `after_data` | `jsonb` | nullable |
-| `created_at` | `timestamptz` | default `now()` |
+| Columna       | Tipo                                  | Reglas                 |
+| ------------- | ------------------------------------- | ---------------------- |
+| `id`          | `bigint generated always as identity` | PK                     |
+| `admin_id`    | `uuid`                                | FK `auth.users(id)`    |
+| `action`      | `varchar(80)`                         | p. ej. `place.publish` |
+| `target_type` | `varchar(40)`                         | tipo de recurso        |
+| `target_id`   | `uuid`                                | recurso afectado       |
+| `before_data` | `jsonb`                               | nullable               |
+| `after_data`  | `jsonb`                               | nullable               |
+| `created_at`  | `timestamptz`                         | default `now()`        |
 
 Solo puede leerse o insertarse desde lógica administrativa autorizada.
 
@@ -304,13 +304,13 @@ No se guardan estos valores duplicados en `places` durante el MVP.
 
 ### RPC requeridas
 
-| Función | Finalidad |
-|---|---|
-| `search_places` | Buscar por texto, categoría, idioma y paginación |
-| `nearby_places` | Devolver lugares dentro de un radio ordenados por distancia |
-| `get_place_detail` | Obtener ficha traducida, estadísticas e imágenes |
-| `get_recommendations` | Calcular recomendaciones personalizadas |
-| `is_admin` | Verificar el rol sin exponer `user_roles` |
+| Función               | Finalidad                                                   |
+| --------------------- | ----------------------------------------------------------- |
+| `search_places`       | Buscar por texto, categoría, idioma y paginación            |
+| `nearby_places`       | Devolver lugares dentro de un radio ordenados por distancia |
+| `get_place_detail`    | Obtener ficha traducida, estadísticas e imágenes            |
+| `get_recommendations` | Calcular recomendaciones personalizadas                     |
+| `is_admin`            | Verificar el rol sin exponer `user_roles`                   |
 
 Las funciones públicas deben fijar explícitamente `search_path`, validar límites y respetar RLS.
 
@@ -337,17 +337,17 @@ También se requieren `check constraints` para idiomas, colores hexadecimales, U
 
 ## 8. Matriz RLS resumida
 
-| Recurso | Invitado | Usuario autenticado | Administrador |
-|---|---|---|---|
-| Lugares/categorías publicados | Leer | Leer | CRUD y moderar |
-| Perfil | Leer nombre/avatar público | Leer públicos; editar el propio | Leer/moderar |
-| Reseñas publicadas | Leer | Leer; CRUD propia | CRUD/moderar todas |
-| Favoritos | No | CRUD propios | Sin acceso ordinario |
-| Votos turísticos | Leer agregados | CRUD propio | Leer agregados/moderar lugar |
-| Sugerencias | No | Crear y leer propias | Leer/revisar todas |
-| Imágenes publicadas | Leer | Leer/subir propias pendientes | Publicar/rechazar |
-| Reportes | No | Crear y leer propios | Leer/resolver |
-| Roles y auditoría | No | No | Acceso restringido |
+| Recurso                       | Invitado                   | Usuario autenticado             | Administrador                |
+| ----------------------------- | -------------------------- | ------------------------------- | ---------------------------- |
+| Lugares/categorías publicados | Leer                       | Leer                            | CRUD y moderar               |
+| Perfil                        | Leer nombre/avatar público | Leer públicos; editar el propio | Leer/moderar                 |
+| Reseñas publicadas            | Leer                       | Leer; CRUD propia               | CRUD/moderar todas           |
+| Favoritos                     | No                         | CRUD propios                    | Sin acceso ordinario         |
+| Votos turísticos              | Leer agregados             | CRUD propio                     | Leer agregados/moderar lugar |
+| Sugerencias                   | No                         | Crear y leer propias            | Leer/revisar todas           |
+| Imágenes publicadas           | Leer                       | Leer/subir propias pendientes   | Publicar/rechazar            |
+| Reportes                      | No                         | Crear y leer propios            | Leer/resolver                |
+| Roles y auditoría             | No                         | No                              | Acceso restringido           |
 
 Reglas críticas:
 
@@ -359,9 +359,9 @@ Reglas críticas:
 
 ## 9. Storage
 
-| Bucket | Acceso | Reglas |
-|---|---|---|
-| `avatars` | Lectura pública | Usuario escribe solo en `user_id/*` |
+| Bucket         | Acceso                                                                       | Reglas                                      |
+| -------------- | ---------------------------------------------------------------------------- | ------------------------------------------- |
+| `avatars`      | Lectura pública                                                              | Usuario escribe solo en `user_id/*`         |
 | `place-images` | Bucket privado; URL firmada solo para registros publicados o del propietario | Usuario escribe en `user_id/*`; máximo 5 MB |
 
 Tipos admitidos: JPEG, PNG y WebP. El nombre físico debe ser UUID; no conservar nombres enviados por el usuario.

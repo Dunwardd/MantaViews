@@ -106,8 +106,8 @@ Script Postman posterior a la respuesta:
 
 ```javascript
 const body = pm.response.json();
-pm.environment.set("access_token", body.access_token);
-pm.environment.set("user_id", body.user.id);
+pm.environment.set('access_token', body.access_token);
+pm.environment.set('user_id', body.user.id);
 ```
 
 ### AUTH-03 — Refrescar sesión
@@ -448,7 +448,10 @@ Respuesta normalizada:
   "durationSeconds": 1420,
   "geometry": {
     "type": "LineString",
-    "coordinates": [[-80.7331, -0.9538], [-80.7282, -0.9446]]
+    "coordinates": [
+      [-80.7331, -0.9538],
+      [-80.7282, -0.9446]
+    ]
   }
 }
 ```

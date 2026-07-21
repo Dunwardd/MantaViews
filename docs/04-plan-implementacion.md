@@ -33,18 +33,18 @@ Criterio de aceptación: las tres personas pueden acceder a los servicios y cono
 
 ## 4. Fase 1 — Inicialización del proyecto
 
-- [ ] Crear proyecto Expo con TypeScript y Expo Router.
-- [ ] Mantener rutas únicamente en `src/app`.
-- [ ] Crear carpetas `components`, `screens`, `features`, `services`, `hooks`, `utils`, `theme`, `i18n` y `types`.
-- [ ] Configurar alias `@/*` hacia `src/*`.
-- [ ] Configurar ESLint, Prettier y scripts de verificación.
-- [ ] Añadir `.env.example` sin secretos.
-- [ ] Añadir `.env*`, credenciales y archivos locales sensibles a `.gitignore`.
-- [ ] Instalar dependencias compatibles usando `npx expo install` cuando corresponda.
-- [ ] Configurar TanStack Query con caché y reintentos controlados.
-- [ ] Configurar Supabase client y persistencia segura de sesión.
-- [ ] Confirmar que el proyecto abre en Expo Go Android e iOS disponibles.
-- [ ] Confirmar que Expo Web compila.
+- [x] Crear proyecto Expo con TypeScript y Expo Router.
+- [x] Mantener rutas únicamente en `src/app`.
+- [x] Crear carpetas `components`, `screens`, `features`, `services`, `hooks`, `utils`, `theme`, `i18n` y `types`.
+- [x] Configurar alias `@/*` hacia `src/*`.
+- [x] Configurar ESLint, Prettier y scripts de verificación.
+- [x] Añadir `.env.example` sin secretos.
+- [x] Añadir `.env*`, credenciales y archivos locales sensibles a `.gitignore`.
+- [x] Instalar dependencias compatibles usando `npx expo install` cuando corresponda.
+- [x] Configurar TanStack Query con caché y reintentos controlados.
+- [x] Configurar Supabase client y persistencia segura de sesión.
+- [-] Confirmar que el proyecto abre en Expo Go Android e iOS disponibles. Metro genera el QR; falta escanearlo en dispositivos físicos.
+- [x] Confirmar que Expo Web compila.
 
 Criterio de aceptación: app vacía ejecutándose en móvil y web, lint/typecheck exitosos y ningún secreto versionado.
 
@@ -326,4 +326,3 @@ El MVP está terminado cuando:
 - [ ] La ubicación no se almacena.
 - [ ] La aplicación se demuestra desde al menos dos dispositivos.
 - [ ] README, colección Postman y variables de ejemplo están entregables.
-
