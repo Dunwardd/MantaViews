@@ -96,6 +96,6 @@ export async function signInWithGoogle() {
 }
 
 export async function signOut() {
-  const { error } = await getSupabaseClient().auth.signOut();
+  const { error } = await getSupabaseClient().auth.signOut({ scope: 'local' });
   if (error) throw error;
 }

@@ -57,6 +57,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       session,
       signOut: async () => {
         await signOutFromSupabase();
+        setSession(null);
         queryClient.clear();
       },
       user: session?.user ?? null,

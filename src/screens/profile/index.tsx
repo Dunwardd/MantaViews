@@ -1,16 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Platform, ScrollView, Text, View } from 'react-native';
 
 import { AuthButton } from '@/components/auth/auth-button';
 import { AuthNotice } from '@/components/auth/auth-notice';
 import { StatusCard } from '@/components/ui/status-card';
 import { useAuth } from '@/providers/auth-provider';
+import { getAuthErrorMessage } from '@/services/auth/auth-errors';
 import { getCurrentProfile, getCurrentUserIsAdmin } from '@/services/profiles/profile-service';
 import { brandColors, colors, spacing } from '@/theme';
 
 export function ProfileScreen() {
   const { isAuthenticated, isLoading, signOut, user } = useAuth();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
   const profileQuery = useQuery({
     enabled: Boolean(user?.id),
     queryFn: () => getCurrentProfile(user!.id),
@@ -22,13 +26,37 @@ export function ProfileScreen() {
     queryKey: ['private', 'is-admin', user?.id],
   });
 
+  const handleSignOut = async () => {
+    if (isSigningOut) return;
+
+    setIsSigningOut(true);
+    setSignOutError(null);
+
+    try {
+      await signOut();
+      router.replace('/(tabs)');
+    } catch (error: unknown) {
+      setSignOutError(getAuthErrorMessage(error));
+      setIsSigningOut(false);
+    }
+  };
+
   const confirmSignOut = () => {
-    Alert.alert('Cerrar sesión', 'Se eliminará la sesión guardada en este dispositivo.', [
+    const message = 'Se eliminará la sesión guardada en este dispositivo.';
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Cerrar sesión\n\n${message}`)) {
+        void handleSignOut();
+      }
+      return;
+    }
+
+    Alert.alert('Cerrar sesión', message, [
       { style: 'cancel', text: 'Cancelar' },
       {
         style: 'destructive',
         text: 'Cerrar sesión',
-        onPress: () => void signOut(),
+        onPress: () => void handleSignOut(),
       },
     ]);
   };
@@ -121,7 +149,14 @@ export function ProfileScreen() {
         description={`Correo ${user.email_confirmed_at ? 'confirmado' : 'pendiente de confirmación'} · Idioma ${profileQuery.data?.preferred_language === 'en' ? 'inglés' : 'español'}`}
       />
 
-      <AuthButton label="Cerrar sesión" onPress={confirmSignOut} variant="secondary" />
+      {signOutError ? <AuthNotice message={signOutError} /> : null}
+
+      <AuthButton
+        label="Cerrar sesión"
+        loading={isSigningOut}
+        onPress={confirmSignOut}
+        variant="secondary"
+      />
     </ScrollView>
   );
 }
