@@ -12,7 +12,7 @@ Los datos cartográficos de OpenStreetMap se usan bajo ODbL y requieren la atrib
 
 ## Imágenes de portada
 
-Las imágenes se cargaron en el bucket privado `place-images` como variantes JPEG optimizadas de entre 63 KB y 312 KB. La aplicación las entrega mediante URL firmada.
+Hay 21 lugares con portada. Las imágenes se cargaron en el bucket privado `place-images` como variantes JPEG optimizadas de entre 48 KB y 312 KB. La aplicación las entrega mediante URL firmada.
 
 | Lugar | Autor o fuente | Licencia | Página de origen |
 |---|---|---|---|
@@ -24,5 +24,18 @@ Las imágenes se cargaron en el bucket privado `place-images` como variantes JPE
 | Museo Centro Cultural Manta | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Visit Manta](https://www.visitmanta.org/en/properties-2) |
 | Museo Municipal Etnográfico Cancebí | Jriscom14 / Wikimedia Commons | CC0 1.0 | [Archivo](https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Ecuador_Exhibited_in_the_CANCEBI_Museum_Manta_-Ecuador_Jan_2025.jpg) |
 | Mall del Pacífico | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Visit Manta](https://www.visitmanta.org/en/properties-2) |
+| Playa Piedra Larga | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Visit Manta](https://www.visitmanta.org/en/properties-2) |
+| Parque Central | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Visit Manta](https://www.visitmanta.org/en/properties-2) |
+| Megaparque Centenario Agustín Intriago | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Visit Manta](https://www.visitmanta.org/en/properties-2) |
+| Plaza del Mar | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Visit Manta](https://www.visitmanta.org/en/properties-2) |
+| Memorial 16A | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Visit Manta](https://www.visitmanta.org/en/properties-2) |
+| Silla Ceremonial de Manta | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Visit Manta](https://www.visitmanta.org/en/properties-2) |
+| Monumento Eloy Alfaro | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Visit Manta](https://www.visitmanta.org/en/properties-2) |
+| Paseo Shopping Manta | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Visit Manta](https://www.visitmanta.org/en/properties-2) |
+| La Quadra | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Visit Manta](https://www.visitmanta.org/en/properties-2) |
+| Hotel Balandra | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Hoteles de Visit Manta](https://www.visitmanta.org/en/properties-1) |
+| Corrales Marinos de Ligüiqui | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Visit Manta](https://www.visitmanta.org/en/properties-2) |
+| Centro Cultural Buque Azart | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Visit Manta](https://www.visitmanta.org/en/properties-2) |
+| Terminal de Cruceros de Manta | Visit Manta — Buró Turístico de Manta | Copyright; demo académica | [Visit Manta](https://www.visitmanta.org/en/properties-2) |
 
-Las filas de `place_images` guardan la URL de origen, el texto de atribución, el nombre de la licencia y su enlace cuando existe. Las cuatro imágenes de Visit Manta no declaran licencia abierta; deben reemplazarse por material autorizado antes de una publicación comercial o en tiendas.
+Las filas de `place_images` guardan la URL de origen, el texto de atribución, el nombre de la licencia y su enlace cuando existe. Las 17 imágenes de Visit Manta no declaran licencia abierta; deben reemplazarse por material autorizado antes de una publicación comercial o en tiendas.
