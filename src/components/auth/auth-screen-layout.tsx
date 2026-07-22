@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
 
+import { useLocale } from '@/providers/locale-provider';
 import { brandColors, colors, spacing } from '@/theme';
 
 type AuthScreenLayoutProps = PropsWithChildren<{
@@ -11,6 +12,7 @@ type AuthScreenLayoutProps = PropsWithChildren<{
 }>;
 
 export function AuthScreenLayout({ children, footer, subtitle, title }: AuthScreenLayoutProps) {
+  const { t } = useLocale();
   return (
     <KeyboardAvoidingView
       behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined}
@@ -23,7 +25,7 @@ export function AuthScreenLayout({ children, footer, subtitle, title }: AuthScre
       >
         <View style={{ alignItems: 'center', gap: spacing.sm, maxWidth: 480, width: '100%' }}>
           <Image
-            accessibilityLabel="Logo de MantaViews"
+            accessibilityLabel={t('explore.logo')}
             source={require('../../../assets/images/mantaviews-app-icon.png')}
             contentFit="contain"
             style={{ borderRadius: 24, height: 116, width: 116 }}

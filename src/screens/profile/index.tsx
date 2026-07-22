@@ -12,12 +12,14 @@ import { LoadingState } from '@/components/ui/feedback-state';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { StatusCard } from '@/components/ui/status-card';
 import { useAuth } from '@/providers/auth-provider';
+import { useLocale } from '@/providers/locale-provider';
 import { getAuthErrorMessage } from '@/services/auth/auth-errors';
 import { getCurrentProfile, getCurrentUserIsAdmin } from '@/services/profiles/profile-service';
 import { brandColors, colors, layout, spacing, typography } from '@/theme';
 
 export function ProfileScreen() {
   const { isAuthenticated, isLoading, signOut, user } = useAuth();
+  const { locale, t } = useLocale();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const profileQuery = useQuery({
@@ -41,26 +43,26 @@ export function ProfileScreen() {
       await signOut();
       router.replace('/(tabs)');
     } catch (error: unknown) {
-      setSignOutError(getAuthErrorMessage(error));
+      setSignOutError(getAuthErrorMessage(error, locale));
       setIsSigningOut(false);
     }
   };
 
   const confirmSignOut = () => {
-    const message = 'Se eliminará la sesión guardada en este dispositivo.';
+    const message = t('profile.signOutQuestion');
 
     if (process.env.EXPO_OS === 'web') {
-      if (window.confirm(`Cerrar sesión\n\n${message}`)) {
+      if (window.confirm(`${t('profile.signOut')}\n\n${message}`)) {
         void handleSignOut();
       }
       return;
     }
 
-    Alert.alert('Cerrar sesión', message, [
-      { style: 'cancel', text: 'Cancelar' },
+    Alert.alert(t('profile.signOut'), message, [
+      { style: 'cancel', text: t('common.cancel') },
       {
         style: 'destructive',
-        text: 'Cerrar sesión',
+        text: t('profile.signOut'),
         onPress: () => void handleSignOut(),
       },
     ]);
@@ -79,7 +81,7 @@ export function ProfileScreen() {
         }}
         style={{ backgroundColor: colors.background }}
       >
-        <LoadingState label="Preparando tu perfil…" />
+        <LoadingState label={t('profile.loading')} />
       </ScrollView>
     );
   }
@@ -99,12 +101,12 @@ export function ProfileScreen() {
       >
         <StatusCard
           accent={brandColors.sun}
-          title="Explora como invitado"
-          description="Inicia sesión solo cuando quieras comentar, votar, guardar lugares o enviar sugerencias."
+          title={t('profile.guestTitle')}
+          description={t('profile.guestDescription')}
         />
-        <AuthButton label="Iniciar sesión" onPress={() => router.push('/sign-in')} />
+        <AuthButton label={t('auth.signIn')} onPress={() => router.push('/sign-in')} />
         <AuthButton
-          label="Crear cuenta"
+          label={t('auth.signUp')}
           onPress={() => router.push('/sign-up')}
           variant="secondary"
         />
@@ -131,7 +133,9 @@ export function ProfileScreen() {
           uri={null}
         />
         <Text selectable style={{ ...typography.title, color: colors.label }}>
-          {profileQuery.data?.display_name ?? user.user_metadata.display_name ?? 'Viajero de Manta'}
+          {profileQuery.data?.display_name ??
+            user.user_metadata.display_name ??
+            t('profile.traveler')}
         </Text>
         <Text selectable style={{ color: colors.secondaryLabel, fontSize: 15 }}>
           {user.email}
@@ -142,48 +146,46 @@ export function ProfileScreen() {
               selectable
               style={{ color: brandColors.primary, fontSize: 13, fontWeight: '800' }}
             >
-              Administrador de MantaViews
+              {t('profile.admin')}
             </Text>
             <AppButton
-              label="Abrir panel administrativo"
+              label={t('profile.openAdmin')}
               onPress={() => router.push('/admin' as Href)}
             />
           </>
         ) : null}
       </SurfaceCard>
 
-      {profileQuery.isError ? (
-        <AuthNotice message="Tu sesión está activa, pero no pudimos cargar el perfil. Intenta nuevamente." />
-      ) : null}
+      {profileQuery.isError ? <AuthNotice message={t('profile.loadError')} /> : null}
 
       <StatusCard
-        title="Cuenta protegida"
-        description={`Correo ${user.email_confirmed_at ? 'confirmado' : 'pendiente de confirmación'} · Idioma ${profileQuery.data?.preferred_language === 'en' ? 'inglés' : 'español'}`}
+        title={t('profile.protected')}
+        description={`${t(user.email_confirmed_at ? 'profile.emailConfirmed' : 'profile.emailPending')} · ${t(profileQuery.data?.preferred_language === 'en' ? 'profile.languageEnglish' : 'profile.languageSpanish')}`}
       />
 
       {signOutError ? <AuthNotice message={signOutError} /> : null}
 
       <AppButton
         icon={<AppIcon color={brandColors.primary} name="settings" size={20} />}
-        label="Preferencias"
+        label={t('profile.preferences')}
         onPress={() => router.push('/preferences' as Href)}
         variant="secondary"
       />
 
       <AppButton
-        label="Editar perfil e intereses"
+        label={t('profile.edit')}
         onPress={() => router.push('/account-settings' as Href)}
         variant="secondary"
       />
 
       <AppButton
-        label="Mis sugerencias de lugares"
+        label={t('profile.suggestions')}
         onPress={() => router.push('/suggestions' as Href)}
         variant="secondary"
       />
 
       <AuthButton
-        label="Cerrar sesión"
+        label={t('profile.signOut')}
         loading={isSigningOut}
         onPress={confirmSignOut}
         variant="secondary"

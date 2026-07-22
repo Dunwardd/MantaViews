@@ -40,9 +40,12 @@ function RootNavigation() {
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-        <Stack.Screen name="place/[id]" options={{ title: 'Detalle del lugar' }} />
-        <Stack.Screen name="account-settings" options={{ title: 'Editar cuenta' }} />
-        <Stack.Screen name="suggestions" options={{ title: 'Sugerencias' }} />
+        <Stack.Screen name="place/[id]" options={{ title: t('navigation.placeDetail') }} />
+        <Stack.Screen
+          name="account-settings"
+          options={{ title: t('navigation.accountSettings') }}
+        />
+        <Stack.Screen name="suggestions" options={{ title: t('navigation.suggestions') }} />
         <Stack.Screen name="admin" options={{ headerShown: false }} />
         <Stack.Screen
           name="preferences"

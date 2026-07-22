@@ -8,62 +8,10 @@ import {
   type PropsWithChildren,
 } from 'react';
 
+import { translate, type TranslationKey } from '@/locales';
 import { preferencesStorage } from '@/services/storage/preferences-storage';
 
 export type AppLocale = 'es' | 'en';
-
-const translations = {
-  es: {
-    'tabs.explore': 'Explorar',
-    'tabs.map': 'Mapa',
-    'tabs.favorites': 'Favoritos',
-    'tabs.profile': 'Perfil',
-    'preferences.title': 'Preferencias',
-    'preferences.language': 'Idioma de la aplicación',
-    'preferences.description': 'Elige el idioma que usará MantaViews.',
-    'preferences.readyTitle': 'Base bilingüe activa',
-    'preferences.readyDescription':
-      'La navegación cambia de idioma inmediatamente. Las pantallas restantes se traducirán durante la fase de internacionalización.',
-    'language.spanish': 'Español',
-    'language.english': 'Inglés',
-    'onboarding.title': 'Tu guía para descubrir Manta',
-    'onboarding.subtitle':
-      'Explora playas, cultura, gastronomía y experiencias elegidas por la comunidad.',
-    'onboarding.discoverTitle': 'Descubre lugares',
-    'onboarding.discoverDescription': 'Busca y filtra el catálogo turístico desde cualquier lugar.',
-    'onboarding.routeTitle': 'Planea tu visita',
-    'onboarding.routeDescription': 'Consulta ubicación, horarios, contacto y rutas.',
-    'onboarding.communityTitle': 'Viaja con confianza',
-    'onboarding.communityDescription': 'Revisa valoraciones y recomendaciones de otros visitantes.',
-    'onboarding.start': 'Comenzar a explorar',
-  },
-  en: {
-    'tabs.explore': 'Explore',
-    'tabs.map': 'Map',
-    'tabs.favorites': 'Favorites',
-    'tabs.profile': 'Profile',
-    'preferences.title': 'Preferences',
-    'preferences.language': 'App language',
-    'preferences.description': 'Choose the language MantaViews will use.',
-    'preferences.readyTitle': 'Bilingual foundation ready',
-    'preferences.readyDescription':
-      'Navigation changes language immediately. The remaining screens will be translated during the internationalization phase.',
-    'language.spanish': 'Spanish',
-    'language.english': 'English',
-    'onboarding.title': 'Your guide to discovering Manta',
-    'onboarding.subtitle':
-      'Explore beaches, culture, food and experiences selected by the community.',
-    'onboarding.discoverTitle': 'Discover places',
-    'onboarding.discoverDescription': 'Search and filter the tourism catalog from anywhere.',
-    'onboarding.routeTitle': 'Plan your visit',
-    'onboarding.routeDescription': 'Check locations, schedules, contact details and routes.',
-    'onboarding.communityTitle': 'Travel with confidence',
-    'onboarding.communityDescription': 'Read ratings and recommendations from other visitors.',
-    'onboarding.start': 'Start exploring',
-  },
-} as const;
-
-type TranslationKey = keyof (typeof translations)['es'];
 
 type LocaleContextValue = {
   completeOnboarding: () => void;
@@ -130,7 +78,7 @@ export function LocaleProvider({ children }: PropsWithChildren) {
       isHydrated,
       locale,
       setLocale: updateLocale,
-      t: (key) => translations[locale][key],
+      t: (key) => translate(locale, key),
     }),
     [completeOnboarding, hasCompletedOnboarding, isHydrated, locale, updateLocale],
   );

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 
 import type { TourismMapProps } from '@/components/map/tourism-map-types';
+import { useLocale } from '@/providers/locale-provider';
 import { brandColors, colors } from '@/theme';
 import { MANTA_CENTER } from '@/utils/geo';
 
@@ -21,6 +22,7 @@ export function TourismMap({
   selectedPlaceId,
   userLocation,
 }: TourismMapProps) {
+  const { t } = useLocale();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markerLayerRef = useRef<LayerGroup | null>(null);
@@ -96,7 +98,7 @@ export function TourismMap({
         .addTo(markerLayer);
 
       const markerElement = marker.getElement();
-      markerElement?.setAttribute('aria-label', `Seleccionar ${place.name}`);
+      markerElement?.setAttribute('aria-label', `${t('map.selectPlace')} ${place.name}`);
       markerElement?.setAttribute('role', 'button');
       markerElement?.setAttribute('tabindex', '0');
       markerElement?.addEventListener('keydown', (event) => {
@@ -118,10 +120,10 @@ export function TourismMap({
           radius: 10,
           weight: 4,
         })
-        .bindTooltip('Tu ubicación aproximada', { direction: 'top', offset: [0, -10] })
+        .bindTooltip(t('map.userLocation'), { direction: 'top', offset: [0, -10] })
         .addTo(markerLayer);
     }
-  }, [leaflet, onSelectPlace, places, selectedPlaceId, userLocation]);
+  }, [leaflet, onSelectPlace, places, selectedPlaceId, t, userLocation]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -160,7 +162,7 @@ export function TourismMap({
 
   return (
     <div
-      aria-label="Mapa interactivo de lugares turísticos de Manta"
+      aria-label={t('map.label')}
       role="application"
       style={{
         backgroundColor: '#DDF2F2',
@@ -191,7 +193,7 @@ export function TourismMap({
           zIndex: 500,
         }}
       >
-        Mapa real · OpenStreetMap
+        {t('map.real')}
       </div>
 
       {mapStatus !== 'ready' ? (
@@ -211,9 +213,7 @@ export function TourismMap({
             zIndex: 600,
           }}
         >
-          {mapStatus === 'error'
-            ? 'No pudimos cargar el mapa. Revisa tu conexión e inténtalo nuevamente.'
-            : 'Cargando mapa de Manta…'}
+          {mapStatus === 'error' ? t('map.error') : t('map.loading')}
         </div>
       ) : null}
     </div>

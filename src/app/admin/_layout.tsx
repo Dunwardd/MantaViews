@@ -3,10 +3,12 @@ import { Redirect, Slot } from 'expo-router';
 
 import { LoadingState } from '@/components/ui/feedback-state';
 import { useAuth } from '@/providers/auth-provider';
+import { useLocale } from '@/providers/locale-provider';
 import { getCurrentUserIsAdmin } from '@/services/profiles/profile-service';
 
 export default function AdminLayout() {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const { t } = useLocale();
   const adminQuery = useQuery({
     enabled: Boolean(user?.id),
     queryFn: getCurrentUserIsAdmin,
@@ -14,7 +16,7 @@ export default function AdminLayout() {
   });
 
   if (isLoading || (isAuthenticated && adminQuery.isPending)) {
-    return <LoadingState label="Verificando acceso administrativo…" />;
+    return <LoadingState label={t('admin.checkingAccess')} />;
   }
   if (!isAuthenticated) {
     return <Redirect href={{ pathname: '/sign-in', params: { next: '/admin' } }} />;

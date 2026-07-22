@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/app-icon';
+import { useLocale } from '@/providers/locale-provider';
 import { brandColors, colors, spacing } from '@/theme';
 
 type PlaceCoverProps = {
@@ -13,10 +14,11 @@ type PlaceCoverProps = {
 };
 
 export function PlaceCover({ altText, categoryColor, height = 176, name, url }: PlaceCoverProps) {
+  const { t } = useLocale();
   if (url) {
     return (
       <Image
-        accessibilityLabel={altText || `Fotografía de ${name}`}
+        accessibilityLabel={altText || `${t('places.photo')} ${name}`}
         contentFit="cover"
         source={{ uri: url }}
         style={{ backgroundColor: `${categoryColor}20`, height, width: '100%' }}
@@ -27,7 +29,8 @@ export function PlaceCover({ altText, categoryColor, height = 176, name, url }: 
 
   return (
     <View
-      accessibilityLabel={`Vista ilustrada de ${name}`}
+      accessibilityLabel={`${t('places.illustration')} ${name}`}
+      accessibilityRole="image"
       style={{
         alignItems: 'center',
         backgroundColor: `${categoryColor}20`,
@@ -54,7 +57,7 @@ export function PlaceCover({ altText, categoryColor, height = 176, name, url }: 
         numberOfLines={1}
         style={{ color: brandColors.deepTeal, fontSize: 13, fontWeight: '800' }}
       >
-        Descubre Manta
+        {t('places.discoverManta')}
       </Text>
     </View>
   );

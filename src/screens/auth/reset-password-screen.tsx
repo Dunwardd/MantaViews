@@ -7,11 +7,13 @@ import { AuthField } from '@/components/auth/auth-field';
 import { AuthNotice } from '@/components/auth/auth-notice';
 import { AuthScreenLayout } from '@/components/auth/auth-screen-layout';
 import { useAuth } from '@/providers/auth-provider';
+import { useLocale } from '@/providers/locale-provider';
 import { getAuthErrorMessage } from '@/services/auth/auth-errors';
 import { createSessionFromUrl, updatePassword } from '@/services/auth/auth-service';
 import { validatePassword } from '@/services/auth/auth-validation';
 
 export function ResetPasswordScreen() {
+  const { locale, t } = useLocale();
   const incomingUrl = Linking.useURL();
   const { session } = useAuth();
   const [password, setPassword] = useState('');
@@ -29,16 +31,16 @@ export function ResetPasswordScreen() {
 
     void createSessionFromUrl(incomingUrl)
       .then((createdSession) => {
-        if (!createdSession) setError('El enlace no contiene una sesión válida o ya expiró.');
+        if (!createdSession) setError(t('auth.invalidResetLink'));
       })
-      .catch((caughtError: unknown) => setError(getAuthErrorMessage(caughtError)))
+      .catch((caughtError: unknown) => setError(getAuthErrorMessage(caughtError, locale)))
       .finally(() => setIsPreparing(false));
-  }, [incomingUrl, session]);
+  }, [incomingUrl, locale, session, t]);
 
   const handleUpdate = async () => {
     const validationError =
-      validatePassword(password) ??
-      (password !== confirmation ? 'Las contraseñas no coinciden.' : undefined);
+      validatePassword(password, locale) ??
+      (password !== confirmation ? t('auth.passwordMismatch') : undefined);
     if (validationError) {
       setError(validationError);
       return;
@@ -50,25 +52,22 @@ export function ResetPasswordScreen() {
       await updatePassword(password);
       router.replace('/(tabs)/profile');
     } catch (caughtError) {
-      setError(getAuthErrorMessage(caughtError));
+      setError(getAuthErrorMessage(caughtError, locale));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <AuthScreenLayout
-      title="Nueva contraseña"
-      subtitle="Elige una contraseña distinta y difícil de adivinar."
-    >
+    <AuthScreenLayout title={t('auth.newPassword')} subtitle={t('auth.newPasswordSubtitle')}>
       {error ? <AuthNotice message={error} /> : null}
       <AuthField
         autoCapitalize="none"
         autoComplete="new-password"
         editable={!isPreparing && Boolean(session)}
-        label="Nueva contraseña"
+        label={t('auth.newPassword')}
         onChangeText={setPassword}
-        placeholder="8+ caracteres, letra y número"
+        placeholder={t('auth.passwordRules')}
         secureTextEntry
         textContentType="newPassword"
         value={password}
@@ -77,17 +76,17 @@ export function ResetPasswordScreen() {
         autoCapitalize="none"
         autoComplete="new-password"
         editable={!isPreparing && Boolean(session)}
-        label="Confirmar contraseña"
+        label={t('auth.confirmPassword')}
         onChangeText={setConfirmation}
         onSubmitEditing={() => void handleUpdate()}
-        placeholder="Repite tu contraseña"
+        placeholder={t('auth.repeatPassword')}
         secureTextEntry
         textContentType="newPassword"
         value={confirmation}
       />
       <AuthButton
         disabled={!session}
-        label={isPreparing ? 'Validando enlace…' : 'Guardar contraseña'}
+        label={isPreparing ? t('auth.validatingLink') : t('auth.savePassword')}
         loading={isPreparing || isSubmitting}
         onPress={() => void handleUpdate()}
       />

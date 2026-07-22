@@ -37,23 +37,22 @@ type PlaceDetailScreenProps = {
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const REPORT_REASONS = [
-  ['incorrect_information', 'Información incorrecta'],
-  ['duplicate', 'Duplicado'],
-  ['inappropriate', 'Inapropiado'],
-  ['spam', 'Spam'],
-  ['other', 'Otro'],
-] as const;
-
 export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
+  const reportReasons = [
+    ['incorrect_information', t('detail.reportIncorrect')],
+    ['duplicate', t('detail.reportDuplicate')],
+    ['inappropriate', t('detail.reportInappropriate')],
+    ['spam', t('detail.reportSpam')],
+    ['other', t('detail.reportOther')],
+  ] as const;
   const { user } = useAuth();
   const guard = useAuthGuard();
   const queryClient = useQueryClient();
   const returnTo = (placeId ? `/place/${placeId}` : '/(tabs)') as Href;
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
-  const [photoAltText, setPhotoAltText] = useState('Foto compartida por un visitante');
+  const [photoAltText, setPhotoAltText] = useState(() => t('detail.defaultPhotoDescription'));
   const [reportDetails, setReportDetails] = useState('');
   const [reportReason, setReportReason] = useState<
     'incorrect_information' | 'duplicate' | 'inappropriate' | 'spam' | 'other'
@@ -104,7 +103,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
   };
   const favoriteMutation = useMutation({
     mutationFn: async () => {
-      if (!user || !placeId) throw new Error('Sesión requerida.');
+      if (!user || !placeId) throw new Error(t('detail.sessionRequired'));
       const isFavorite = favoriteIdsQuery.data?.includes(placeId) ?? false;
       await setFavorite(user.id, placeId, !isFavorite);
     },
@@ -118,7 +117,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
   });
   const voteMutation = useMutation({
     mutationFn: async (isTouristic: boolean) => {
-      if (!user || !placeId) throw new Error('Sesión requerida.');
+      if (!user || !placeId) throw new Error(t('detail.sessionRequired'));
       await saveTouristVote(user.id, placeId, isTouristic);
     },
     onSuccess: async () => {
@@ -130,9 +129,8 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
   });
   const reviewMutation = useMutation({
     mutationFn: async () => {
-      if (!user || !placeId) throw new Error('Sesión requerida.');
-      if (reviewComment.trim().length < 3)
-        throw new Error('Escribe un comentario de al menos 3 caracteres.');
+      if (!user || !placeId) throw new Error(t('detail.sessionRequired'));
+      if (reviewComment.trim().length < 3) throw new Error(t('detail.commentLength'));
       return saveReview(user.id, placeId, { comment: reviewComment, rating: reviewRating });
     },
     onSuccess: async () => {
@@ -144,7 +142,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
   });
   const archiveReviewMutation = useMutation({
     mutationFn: async () => {
-      if (!user || !placeId) throw new Error('Sesión requerida.');
+      if (!user || !placeId) throw new Error(t('detail.sessionRequired'));
       await archiveReview(user.id, placeId);
     },
     onSuccess: async () => {
@@ -157,8 +155,8 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
   });
   const photoMutation = useMutation({
     mutationFn: async () => {
-      if (!user || !placeId) throw new Error('Sesión requerida.');
-      if (photoAltText.trim().length < 3) throw new Error('Describe brevemente la fotografía.');
+      if (!user || !placeId) throw new Error(t('detail.sessionRequired'));
+      if (photoAltText.trim().length < 3) throw new Error(t('detail.photoDescriptionRequired'));
       const image = await pickCompressedImage();
       if (!image) return null;
       return uploadPendingPlaceImage({
@@ -172,9 +170,9 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
   });
   const reportMutation = useMutation({
     mutationFn: async () => {
-      if (!user || !placeId) throw new Error('Sesión requerida.');
+      if (!user || !placeId) throw new Error(t('detail.sessionRequired'));
       if (reportDetails && reportDetails.trim().length < 3)
-        throw new Error('Explica el reporte con al menos 3 caracteres.');
+        throw new Error(t('detail.reportDetailsRequired'));
       await createReport(user.id, {
         details: reportDetails,
         reason: reportReason,
@@ -193,7 +191,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
       await Linking.openURL(parsedUrl.toString());
     } catch {
       setActionNotice({
-        message: 'No pudimos abrir el enlace en este dispositivo.',
+        message: t('detail.openLinkError'),
         tone: 'error',
       });
     }
@@ -203,37 +201,34 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
     setActionNotice(null);
     const safeNumber = phone.replace(/[^+\d]/g, '');
     if (safeNumber.length < 7) {
-      setActionNotice({ message: 'El número de teléfono no es válido.', tone: 'error' });
+      setActionNotice({ message: t('detail.invalidPhone'), tone: 'error' });
       return;
     }
     try {
       await Linking.openURL(`tel:${safeNumber}`);
     } catch {
-      setActionNotice({ message: 'No pudimos iniciar la llamada.', tone: 'error' });
+      setActionNotice({ message: t('detail.callError'), tone: 'error' });
     }
   };
 
   if (!hasValidId) {
     return (
-      <PageState
-        title="Lugar no válido"
-        description="El enlace no contiene un identificador válido."
-      />
+      <PageState title={t('detail.invalidTitle')} description={t('detail.invalidDescription')} />
     );
   }
 
   if (detailQuery.isPending) {
-    return <PageLoading label="Consultando el lugar en Supabase…" />;
+    return <PageLoading label={t('detail.loading')} />;
   }
 
   if (detailQuery.isError) {
     return (
       <PageContainer>
         <FeedbackState
-          actionLabel="Reintentar"
-          description="Revisa tu conexión e inténtalo otra vez."
+          actionLabel={t('common.retry')}
+          description={t('detail.fetchErrorDescription')}
           onAction={() => void detailQuery.refetch()}
-          title="No pudimos consultar este lugar"
+          title={t('detail.fetchErrorTitle')}
           tone="error"
         />
       </PageContainer>
@@ -243,10 +238,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
   const place = detailQuery.data;
   if (!place) {
     return (
-      <PageState
-        title="Lugar no encontrado"
-        description="El lugar no existe o todavía no está publicado."
-      />
+      <PageState title={t('detail.notFoundTitle')} description={t('detail.notFoundDescription')} />
     );
   }
 
@@ -264,7 +256,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
           await navigator.share({ text: message, title: place.name, url: mapsUrl });
         } else if (navigator.clipboard) {
           await navigator.clipboard.writeText(message);
-          setActionNotice({ message: 'Información copiada para compartir.', tone: 'success' });
+          setActionNotice({ message: t('detail.shareCopied'), tone: 'success' });
         } else {
           throw new Error('Share unavailable');
         }
@@ -273,7 +265,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
       }
     } catch (error) {
       if ((error as { name?: string })?.name === 'AbortError') return;
-      setActionNotice({ message: 'No pudimos compartir el lugar.', tone: 'error' });
+      setActionNotice({ message: t('detail.shareError'), tone: 'error' });
     }
   };
 
@@ -316,7 +308,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
             <Text style={{ color: place.category.color, fontSize: 13, fontWeight: '900' }}>
               {place.category.name.toUpperCase()}
             </Text>
-            {place.isFeatured ? <Badge label="DESTACADO" /> : null}
+            {place.isFeatured ? <Badge label={t('places.featured')} /> : null}
           </View>
           <Text selectable style={{ color: colors.label, fontSize: 30, fontWeight: '900' }}>
             {place.name}
@@ -328,23 +320,26 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
       </View>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-        <MetricCard label="Valoración" value={`${place.stats.averageRating.toFixed(1)} / 5`} />
-        <MetricCard label="Reseñas" value={String(place.stats.reviewCount)} />
-        <MetricCard label="Favoritos" value={String(place.stats.favoriteCount)} />
         <MetricCard
-          label="Sí es turístico"
+          label={t('detail.rating')}
+          value={`${place.stats.averageRating.toFixed(1)} / 5`}
+        />
+        <MetricCard label={t('detail.reviews')} value={String(place.stats.reviewCount)} />
+        <MetricCard label={t('detail.favorites')} value={String(place.stats.favoriteCount)} />
+        <MetricCard
+          label={t('detail.touristic')}
           value={`${place.stats.touristicPercentage.toFixed(0)}%`}
         />
       </View>
 
-      <InformationSection title="Participa en MantaViews">
+      <InformationSection title={t('detail.community')}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           <View style={{ flexGrow: 1, minWidth: 180 }}>
             <AppButton
               label={
                 favoriteIdsQuery.data?.includes(place.id)
-                  ? 'Quitar de favoritos'
-                  : 'Guardar en favoritos'
+                  ? t('detail.removeFavorite')
+                  : t('detail.addFavorite')
               }
               loading={favoriteMutation.isPending}
               onPress={() => guard(() => favoriteMutation.mutate(), returnTo)}
@@ -353,25 +348,25 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
           </View>
           <FilterChip
             color={brandColors.lime}
-            label="Sí es turístico"
+            label={t('detail.touristic')}
             onPress={() => guard(() => voteMutation.mutate(true), returnTo)}
             selected={voteQuery.data === true}
           />
           <FilterChip
             color={colors.error}
-            label="No es turístico"
+            label={t('detail.notTouristic')}
             onPress={() => guard(() => voteMutation.mutate(false), returnTo)}
             selected={voteQuery.data === false}
           />
         </View>
         {favoriteMutation.error || voteMutation.error ? (
-          <AuthNotice message="No pudimos guardar la acción. Inténtalo nuevamente." />
+          <AuthNotice message={t('detail.actionError')} />
         ) : null}
       </InformationSection>
 
-      <InformationSection title="Tu reseña">
-        <Text style={{ color: colors.secondaryLabel, fontSize: 14 }}>
-          Selecciona una puntuación y comparte una opinión útil para otros turistas.
+      <InformationSection title={t('detail.yourReview')}>
+        <Text selectable style={{ color: colors.secondaryLabel, fontSize: 14 }}>
+          {t('detail.reviewHelp')}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {[1, 2, 3, 4, 5].map((rating) => (
@@ -385,21 +380,23 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
           ))}
         </View>
         <AppInput
-          label="Comentario"
+          label={t('detail.comment')}
           maxLength={1000}
           multiline
           onChangeText={setReviewComment}
-          placeholder="¿Qué deberían saber otros visitantes?"
+          placeholder={t('detail.commentPlaceholder')}
           value={reviewComment}
         />
-        {reviewMutation.isSuccess ? <AuthNotice message="Reseña guardada." tone="success" /> : null}
+        {reviewMutation.isSuccess ? (
+          <AuthNotice message={t('detail.reviewSaved')} tone="success" />
+        ) : null}
         {reviewMutation.error ? (
           <AuthNotice message={(reviewMutation.error as Error).message} />
         ) : null}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           <View style={{ flexGrow: 1, minWidth: 170 }}>
             <AppButton
-              label={ownReviewQuery.data ? 'Actualizar reseña' : 'Publicar reseña'}
+              label={ownReviewQuery.data ? t('detail.updateReview') : t('detail.publishReview')}
               loading={reviewMutation.isPending}
               onPress={() => guard(() => reviewMutation.mutate(), returnTo)}
             />
@@ -407,7 +404,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
           {ownReviewQuery.data?.status === 'published' ? (
             <View style={{ flexGrow: 1, minWidth: 150 }}>
               <AppButton
-                label="Archivar reseña"
+                label={t('detail.archiveReview')}
                 loading={archiveReviewMutation.isPending}
                 onPress={() => archiveReviewMutation.mutate()}
                 variant="danger"
@@ -417,67 +414,65 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
         </View>
       </InformationSection>
 
-      <InformationSection title="Compartir una fotografía">
-        <Text style={{ color: colors.secondaryLabel, fontSize: 14 }}>
-          La imagen se comprime antes de subirla y permanecerá pendiente hasta que un administrador
-          la apruebe.
+      <InformationSection title={t('detail.sharePhoto')}>
+        <Text selectable style={{ color: colors.secondaryLabel, fontSize: 14 }}>
+          {t('detail.photoHelp')}
         </Text>
         <AppInput
-          label="Descripción de la foto"
+          label={t('detail.photoDescription')}
           maxLength={180}
           onChangeText={setPhotoAltText}
           value={photoAltText}
         />
-        {photoMutation.data ? (
-          <AuthNotice message="Foto enviada y pendiente de moderación." tone="success" />
-        ) : null}
+        {photoMutation.data ? <AuthNotice message={t('detail.photoSent')} tone="success" /> : null}
         {photoMutation.error ? (
           <AuthNotice message={(photoMutation.error as Error).message} />
         ) : null}
         <AppButton
-          label="Seleccionar y enviar foto"
+          label={t('detail.selectPhoto')}
           loading={photoMutation.isPending}
           onPress={() => guard(() => photoMutation.mutate(), returnTo)}
           variant="secondary"
         />
       </InformationSection>
 
-      <InformationSection title="Acerca del lugar">
+      <InformationSection title={t('detail.about')}>
         <Text selectable style={{ color: colors.secondaryLabel, fontSize: 15, lineHeight: 24 }}>
           {place.description}
         </Text>
       </InformationSection>
 
-      <InformationSection title="Información para tu visita">
-        <InformationRow label="Dirección" value={place.address} />
+      <InformationSection title={t('detail.visitInformation')}>
+        <InformationRow label={t('detail.address')} value={place.address} />
         <InformationRow
-          label="Coordenadas"
+          label={t('detail.coordinates')}
           value={`${place.latitude.toFixed(5)}, ${place.longitude.toFixed(5)}`}
         />
-        <InformationRow label="Precio" value={formatPriceLevel(place.priceLevel)} />
+        <InformationRow label={t('detail.price')} value={formatPriceLevel(place.priceLevel, t)} />
         <InformationRow
-          label="Horario"
+          label={t('detail.schedule')}
           value={
-            hasOpeningHours
-              ? formatOpeningHours(place.openingHours)
-              : 'Consulta el horario antes de visitar'
+            hasOpeningHours ? formatOpeningHours(place.openingHours) : t('detail.scheduleUnknown')
           }
         />
-        <InformationRow label="Teléfono" value={place.phone ?? 'No disponible'} />
-        <InformationRow label="Sitio web" value={place.websiteUrl ?? 'No disponible'} />
+        <InformationRow label={t('detail.phone')} value={place.phone ?? t('detail.unavailable')} />
+        <InformationRow
+          label={t('detail.website')}
+          value={place.websiteUrl ?? t('detail.unavailable')}
+        />
       </InformationSection>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
         <View style={{ flexGrow: 1, minWidth: 220 }}>
           <AppButton
-            label="Mostrar ruta en Google Maps"
+            label={t('detail.googleRoute')}
             onPress={() => void openExternalUrl(mapsUrl)}
           />
         </View>
         {place.phone ? (
           <View style={{ flexGrow: 1, minWidth: 160 }}>
             <AppButton
-              label="Llamar"
+              label={t('detail.call')}
               onPress={() => void callPhone(place.phone as string)}
               variant="secondary"
             />
@@ -486,7 +481,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
         {place.websiteUrl ? (
           <View style={{ flexGrow: 1, minWidth: 180 }}>
             <AppButton
-              label="Visitar sitio web"
+              label={t('detail.visitWebsite')}
               onPress={() => void openExternalUrl(place.websiteUrl as string)}
               variant="secondary"
             />
@@ -494,7 +489,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
         ) : null}
         <View style={{ flexGrow: 1, minWidth: 180 }}>
           <AppButton
-            label="Compartir lugar"
+            label={t('detail.sharePlace')}
             onPress={() => void sharePlace()}
             variant="secondary"
           />
@@ -502,11 +497,11 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
       </View>
       {actionNotice ? <AuthNotice message={actionNotice.message} tone={actionNotice.tone} /> : null}
 
-      <InformationSection title="Galería">
+      <InformationSection title={t('detail.gallery')}>
         {visibleGallery.length === 0 ? (
           <FeedbackState
-            description="Todavía no hay fotografías aprobadas para este lugar."
-            title="Galería próximamente"
+            description={t('detail.galleryEmptyDescription')}
+            title={t('detail.galleryEmptyTitle')}
           />
         ) : (
           <ScrollView
@@ -517,7 +512,8 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
             {visibleGallery.map((image) => (
               <View key={image.id} style={{ gap: spacing.sm, width: 280 }}>
                 <Image
-                  accessibilityLabel={image.altText || `Fotografía de ${place.name}`}
+                  accessibilityLabel={image.altText || `${t('places.photo')} ${place.name}`}
+                  accessibilityRole="image"
                   contentFit="cover"
                   source={{ uri: image.url as string }}
                   style={{ borderRadius: 18, height: 190, width: 280 }}
@@ -534,21 +530,21 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
         )}
       </InformationSection>
 
-      <InformationSection title="Opiniones de visitantes">
+      <InformationSection title={t('detail.visitorOpinions')}>
         {reviewsQuery.isPending ? (
-          <LoadingState label="Consultando reseñas…" />
+          <LoadingState label={t('detail.reviewsLoading')} />
         ) : reviewsQuery.isError ? (
           <FeedbackState
-            actionLabel="Reintentar"
-            description="No pudimos cargar las opiniones publicadas."
+            actionLabel={t('common.retry')}
+            description={t('detail.reviewsErrorDescription')}
             onAction={() => void reviewsQuery.refetch()}
-            title="Reseñas no disponibles"
+            title={t('detail.reviewsErrorTitle')}
             tone="error"
           />
         ) : reviewsQuery.data.length === 0 ? (
           <FeedbackState
-            description="Sé la primera persona en compartir una opinión cuando habilitemos la participación."
-            title="Aún no hay reseñas"
+            description={t('detail.reviewsEmptyDescription')}
+            title={t('detail.reviewsEmptyTitle')}
           />
         ) : (
           <View style={{ gap: spacing.md }}>
@@ -587,7 +583,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
                   selectable
                   style={{ color: colors.secondaryLabel, fontSize: 14, lineHeight: 21 }}
                 >
-                  {review.comment || 'Esta persona dejó una valoración sin comentario.'}
+                  {review.comment || t('detail.reviewWithoutComment')}
                 </Text>
               </View>
             ))}
@@ -595,12 +591,12 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
         )}
       </InformationSection>
 
-      <InformationSection title="Reportar información">
-        <Text style={{ color: colors.secondaryLabel, fontSize: 14 }}>
-          Los reportes son privados y serán revisados por un administrador.
+      <InformationSection title={t('detail.report')}>
+        <Text selectable style={{ color: colors.secondaryLabel, fontSize: 14 }}>
+          {t('detail.reportHelp')}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          {REPORT_REASONS.map(([reason, label]) => (
+          {reportReasons.map(([reason, label]) => (
             <FilterChip
               key={reason}
               label={label}
@@ -610,18 +606,20 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
           ))}
         </View>
         <AppInput
-          label="Detalles (opcional)"
+          label={t('detail.reportDetails')}
           maxLength={500}
           multiline
           onChangeText={setReportDetails}
           value={reportDetails}
         />
-        {reportMutation.isSuccess ? <AuthNotice message="Reporte enviado." tone="success" /> : null}
+        {reportMutation.isSuccess ? (
+          <AuthNotice message={t('detail.reportSent')} tone="success" />
+        ) : null}
         {reportMutation.error ? (
           <AuthNotice message={(reportMutation.error as Error).message} />
         ) : null}
         <AppButton
-          label="Enviar reporte"
+          label={t('detail.sendReport')}
           loading={reportMutation.isPending}
           onPress={() => guard(() => reportMutation.mutate(), returnTo)}
           variant="secondary"
@@ -748,9 +746,9 @@ function MetricCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function formatPriceLevel(priceLevel: number | null) {
-  if (priceLevel === null) return 'No especificado';
-  if (priceLevel === 0) return 'Acceso gratuito';
+function formatPriceLevel(priceLevel: number | null, t: ReturnType<typeof useLocale>['t']) {
+  if (priceLevel === null) return t('detail.priceUnknown');
+  if (priceLevel === 0) return t('detail.priceFree');
   return '$'.repeat(Math.max(1, Math.min(priceLevel, 4)));
 }
 

@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '@/services/supabase/client';
 import { getSignedPlaceImageUrls } from '@/services/storage/image-service';
+import { diversifyRecommendations } from '@/services/catalog/recommendation-algorithm';
 
 export type CatalogLocale = 'es' | 'en';
 
@@ -257,7 +258,7 @@ export async function getTourismRecommendations(
     rows.flatMap((place) => (place.cover_image_path ? [place.cover_image_path] : [])),
   );
 
-  return rows.map<TourismRecommendation>((place) => ({
+  const recommendations = rows.map<TourismRecommendation>((place) => ({
     address: '',
     averageRating: Number(place.average_rating ?? 0),
     categoryColor: '#2FA7B0',
@@ -274,6 +275,8 @@ export async function getTourismRecommendations(
     score: Number(place.score ?? 0),
     shortDescription: place.short_description,
   }));
+
+  return diversifyRecommendations(recommendations, safeLimit);
 }
 
 export async function getNearbyTourismPlaces({

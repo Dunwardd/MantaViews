@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { PlaceCover } from '@/components/places/place-cover';
 import { RatingDisplay } from '@/components/ui/rating-display';
+import { useLocale } from '@/providers/locale-provider';
 import type { TourismPlace } from '@/services/catalog/place-service';
 import { brandColors, colors, spacing } from '@/theme';
 
@@ -12,12 +13,13 @@ type PlaceCardProps = {
 };
 
 export function PlaceCard({ categoryName, place }: PlaceCardProps) {
+  const { t } = useLocale();
   return (
     <Link href={`/place/${place.id}` as Href} asChild>
       <Pressable
-        accessibilityHint="Abre la ficha completa del lugar"
-        accessibilityLabel={`Ver ${place.name}`}
-        accessibilityRole="button"
+        accessibilityHint={t('places.openHint')}
+        accessibilityLabel={`${t('places.view')} ${place.name}`}
+        accessibilityRole="link"
         style={({ pressed }) => ({
           backgroundColor: colors.surface,
           borderColor: colors.separator,
@@ -77,7 +79,7 @@ export function PlaceCard({ categoryName, place }: PlaceCardProps) {
                   selectable
                   style={{ color: brandColors.deepTeal, fontSize: 11, fontWeight: '900' }}
                 >
-                  DESTACADO
+                  {t('places.featured')}
                 </Text>
               </View>
             ) : null}
@@ -99,11 +101,11 @@ export function PlaceCard({ categoryName, place }: PlaceCardProps) {
           </Text>
           {place.distanceMeters !== undefined ? (
             <Text selectable style={{ color: colors.secondaryLabel, fontSize: 13 }}>
-              {formatDistance(place.distanceMeters)} desde el centro de Manta
+              {formatDistance(place.distanceMeters)} {t('places.fromMantaCenter')}
             </Text>
           ) : null}
           <Text selectable style={{ color: brandColors.deepTeal, fontSize: 13, fontWeight: '800' }}>
-            Ver detalles →
+            {t('places.details')}
           </Text>
         </View>
       </Pressable>

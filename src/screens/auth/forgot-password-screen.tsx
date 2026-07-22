@@ -6,19 +6,21 @@ import { AuthButton } from '@/components/auth/auth-button';
 import { AuthField } from '@/components/auth/auth-field';
 import { AuthNotice } from '@/components/auth/auth-notice';
 import { AuthScreenLayout } from '@/components/auth/auth-screen-layout';
+import { useLocale } from '@/providers/locale-provider';
 import { getAuthErrorMessage } from '@/services/auth/auth-errors';
 import { requestPasswordReset } from '@/services/auth/auth-service';
 import { validateEmail } from '@/services/auth/auth-validation';
 import { brandColors, colors } from '@/theme';
 
 export function ForgotPasswordScreen() {
+  const { locale, t } = useLocale();
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string>();
   const [success, setSuccess] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleRequest = async () => {
-    const validationError = validateEmail(email);
+    const validationError = validateEmail(email, locale);
     if (validationError) {
       setError(validationError);
       return;
@@ -29,11 +31,9 @@ export function ForgotPasswordScreen() {
     setIsSubmitting(true);
     try {
       await requestPasswordReset(email);
-      setSuccess(
-        'Si existe una cuenta con ese correo, recibirás un enlace para crear una nueva contraseña.',
-      );
+      setSuccess(t('auth.resetSent'));
     } catch (caughtError) {
-      setError(getAuthErrorMessage(caughtError));
+      setError(getAuthErrorMessage(caughtError, locale));
     } finally {
       setIsSubmitting(false);
     }
@@ -41,17 +41,17 @@ export function ForgotPasswordScreen() {
 
   return (
     <AuthScreenLayout
-      title="Recuperar contraseña"
-      subtitle="Te enviaremos un enlace seguro para elegir una contraseña nueva."
+      title={t('auth.recover')}
+      subtitle={t('auth.recoverSubtitle')}
       footer={
         <View
           style={{ alignItems: 'center', flexDirection: 'row', gap: 4, justifyContent: 'center' }}
         >
           <Text selectable style={{ color: colors.secondaryLabel }}>
-            ¿La recordaste?
+            {t('auth.remembered')}
           </Text>
           <Link href="/sign-in" style={{ color: brandColors.primary, fontWeight: '800' }}>
-            Volver al login
+            {t('auth.backToLogin')}
           </Link>
         </View>
       }
@@ -62,7 +62,7 @@ export function ForgotPasswordScreen() {
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
-        label="Correo electrónico"
+        label={t('auth.email')}
         onChangeText={setEmail}
         onSubmitEditing={() => void handleRequest()}
         placeholder="turista@ejemplo.com"
@@ -71,7 +71,7 @@ export function ForgotPasswordScreen() {
         value={email}
       />
       <AuthButton
-        label="Enviar enlace"
+        label={t('auth.sendLink')}
         loading={isSubmitting}
         onPress={() => void handleRequest()}
       />

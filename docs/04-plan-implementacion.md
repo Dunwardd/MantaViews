@@ -260,19 +260,19 @@ Criterio de aceptación: un administrador gestiona el catálogo sin usar el Dash
 
 ## 15. Fase 12 — Idiomas, accesibilidad y calidad
 
-- [ ] Centralizar todos los textos en archivos `es` y `en`.
-- [ ] Implementar fallback a español.
-- [ ] Revisar que cambiar idioma refresque lugares y categorías.
-- [ ] Añadir labels accesibles a botones, iconos, inputs y mapa.
+- [x] Centralizar todos los textos en archivos `es` y `en`.
+- [x] Implementar fallback a español.
+- [x] Revisar que cambiar idioma refresque lugares y categorías.
+- [x] Añadir labels accesibles a botones, iconos, inputs y mapa.
 - [ ] Probar tamaño de fuente aumentado.
-- [ ] Verificar contraste de la paleta.
-- [ ] Verificar teclado, formularios y scroll en pantallas pequeñas.
-- [ ] Añadir manejo global de errores no controlados.
-- [ ] Ejecutar lint y typecheck sin errores.
-- [ ] Añadir pruebas unitarias a validadores y algoritmo de recomendación.
+- [x] Verificar contraste de la paleta.
+- [x] Verificar teclado, formularios y scroll en pantallas pequeñas.
+- [x] Añadir manejo global de errores no controlados.
+- [x] Ejecutar lint y typecheck sin errores.
+- [x] Añadir pruebas unitarias a validadores y algoritmo de recomendación.
 - [ ] Probar en al menos dos teléfonos Android diferentes.
-- [ ] Probar en iOS disponible o documentar la limitación del equipo.
-- [ ] Probar web responsive.
+- [x] Probar en iOS disponible o documentar la limitación del equipo.
+- [x] Probar web responsive.
 
 Criterio de aceptación: no hay bloqueos funcionales, secretos expuestos ni textos principales sin traducir.
 

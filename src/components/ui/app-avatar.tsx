@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { Text, View } from 'react-native';
 
+import { useLocale } from '@/providers/locale-provider';
 import { brandColors, colors } from '@/theme';
 
 type AppAvatarProps = {
@@ -10,6 +11,7 @@ type AppAvatarProps = {
 };
 
 export function AppAvatar({ label, size = 48, uri }: AppAvatarProps) {
+  const { t } = useLocale();
   const initials =
     label
       .trim()
@@ -21,7 +23,7 @@ export function AppAvatar({ label, size = 48, uri }: AppAvatarProps) {
   if (uri) {
     return (
       <Image
-        accessibilityLabel={`Avatar de ${label}`}
+        accessibilityLabel={`${t('avatar.label')} ${label}`}
         contentFit="cover"
         source={{ uri }}
         style={{ borderRadius: size / 2, height: size, width: size }}
@@ -31,7 +33,8 @@ export function AppAvatar({ label, size = 48, uri }: AppAvatarProps) {
 
   return (
     <View
-      accessibilityLabel={`Avatar de ${label}`}
+      accessibilityLabel={`${t('avatar.label')} ${label}`}
+      accessibilityRole="image"
       style={{
         alignItems: 'center',
         backgroundColor: brandColors.lightOcean,

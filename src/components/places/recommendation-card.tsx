@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { PlaceCover } from '@/components/places/place-cover';
 import { RatingDisplay } from '@/components/ui/rating-display';
+import { useLocale } from '@/providers/locale-provider';
 import type { TourismRecommendation } from '@/services/catalog/place-service';
 import { brandColors, colors, spacing } from '@/theme';
 
@@ -17,12 +18,13 @@ export function RecommendationCard({
   categoryName,
   recommendation,
 }: RecommendationCardProps) {
+  const { t } = useLocale();
   return (
     <Link href={`/place/${recommendation.id}` as Href} asChild>
       <Pressable
-        accessibilityHint="Abre la ficha completa del lugar recomendado"
-        accessibilityLabel={`Ver recomendación: ${recommendation.name}`}
-        accessibilityRole="button"
+        accessibilityHint={t('places.recommendationHint')}
+        accessibilityLabel={`${t('places.recommendation')}: ${recommendation.name}`}
+        accessibilityRole="link"
         style={({ pressed }) => ({
           backgroundColor: colors.surface,
           borderColor: colors.separator,

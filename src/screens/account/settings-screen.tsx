@@ -20,7 +20,7 @@ import { brandColors, colors, layout, spacing, typography } from '@/theme';
 
 export function AccountSettingsScreen() {
   const { user } = useAuth();
-  const { locale, setLocale } = useLocale();
+  const { locale, setLocale, t } = useLocale();
   const queryClient = useQueryClient();
   const [displayName, setDisplayName] = useState('');
   const [selectedInterests, setSelectedInterests] = useState<number[]>([]);
@@ -52,10 +52,10 @@ export function AccountSettingsScreen() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error('Inicia sesión para editar tu perfil.');
+      if (!user) throw new Error(t('account.loginRequired'));
       const cleanName = displayName.trim();
       if (cleanName.length < 2 || cleanName.length > 80) {
-        throw new Error('El nombre debe tener entre 2 y 80 caracteres.');
+        throw new Error(t('account.nameLength'));
       }
       let avatarPath = profileQuery.data?.avatar_path ?? null;
       if (avatar) avatarPath = await uploadAvatar({ ...avatar, userId: user.id });
@@ -68,7 +68,7 @@ export function AccountSettingsScreen() {
     },
     onSuccess: async () => {
       setAvatar(null);
-      setNotice('Perfil e intereses guardados.');
+      setNotice(t('account.saved'));
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['private', 'profile', user?.id] }),
         queryClient.invalidateQueries({ queryKey: ['private', 'interests', user?.id] }),
@@ -80,13 +80,13 @@ export function AccountSettingsScreen() {
   if (!user) {
     return (
       <FeedbackState
-        description="Inicia sesión para administrar tu cuenta."
-        title="Sesión requerida"
+        description={t('account.loginRequired')}
+        title={t('account.sessionRequired')}
       />
     );
   }
   if (profileQuery.isPending || categoriesQuery.isPending || interestsQuery.isPending) {
-    return <LoadingState label="Preparando tu cuenta…" />;
+    return <LoadingState label={t('account.loading')} />;
   }
 
   const avatarUri = avatar?.uri ?? getPublicAvatarUrl(profileQuery.data?.avatar_path ?? null);
@@ -106,7 +106,7 @@ export function AccountSettingsScreen() {
       <SurfaceCard style={{ alignItems: 'center' }}>
         <AppAvatar label={displayName || user.email || 'MV'} size={88} uri={avatarUri} />
         <AppButton
-          label="Elegir foto de perfil"
+          label={t('account.choosePhoto')}
           onPress={() =>
             void pickCompressedImage(720)
               .then((image) => image && setAvatar(image))
@@ -117,19 +117,25 @@ export function AccountSettingsScreen() {
       </SurfaceCard>
 
       <AppInput
-        label="Nombre visible"
+        label={t('auth.displayName')}
         maxLength={80}
         onChangeText={setDisplayName}
         value={displayName}
       />
 
       <View style={{ gap: spacing.sm }}>
-        <Text style={{ ...typography.heading, color: colors.label }}>Idioma</Text>
+        <Text selectable style={{ ...typography.heading, color: colors.label }}>
+          {t('account.language')}
+        </Text>
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <FilterChip label="Español" onPress={() => setLocale('es')} selected={locale === 'es'} />
+          <FilterChip
+            label={t('language.spanish')}
+            onPress={() => setLocale('es')}
+            selected={locale === 'es'}
+          />
           <FilterChip
             color={brandColors.ocean}
-            label="English"
+            label={t('language.english')}
             onPress={() => setLocale('en')}
             selected={locale === 'en'}
           />
@@ -137,9 +143,11 @@ export function AccountSettingsScreen() {
       </View>
 
       <View style={{ gap: spacing.sm }}>
-        <Text style={{ ...typography.heading, color: colors.label }}>Tus intereses</Text>
-        <Text style={{ ...typography.body, color: colors.secondaryLabel }}>
-          Elige las categorías que quieres priorizar en las recomendaciones.
+        <Text selectable style={{ ...typography.heading, color: colors.label }}>
+          {t('account.interests')}
+        </Text>
+        <Text selectable style={{ ...typography.body, color: colors.secondaryLabel }}>
+          {t('account.interestsDescription')}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {(categoriesQuery.data ?? []).map((category) => (
@@ -163,7 +171,7 @@ export function AccountSettingsScreen() {
       {notice ? <AuthNotice message={notice} tone="success" /> : null}
       {saveMutation.error ? <AuthNotice message={(saveMutation.error as Error).message} /> : null}
       <AppButton
-        label="Guardar cambios"
+        label={t('common.save')}
         loading={saveMutation.isPending}
         onPress={() => saveMutation.mutate()}
       />

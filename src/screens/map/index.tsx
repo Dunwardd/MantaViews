@@ -28,14 +28,13 @@ import { MANTA_CENTER } from '@/utils/geo';
 type LocationPermissionState =
   'blocked' | 'checking' | 'denied' | 'error' | 'granted' | 'services-disabled' | 'undetermined';
 
-const routeProfiles: { label: string; value: RouteProfile }[] = [
-  { label: 'Caminando', value: 'foot-walking' },
-  { label: 'En vehículo', value: 'driving-car' },
-  { label: 'En bicicleta', value: 'cycling-regular' },
-];
-
 export function MapScreen() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
+  const routeProfiles: { label: string; value: RouteProfile }[] = [
+    { label: t('map.walking'), value: 'foot-walking' },
+    { label: t('map.driving'), value: 'driving-car' },
+    { label: t('map.cycling'), value: 'cycling-regular' },
+  ];
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<RouteCoordinate | null>(null);
@@ -158,7 +157,7 @@ export function MapScreen() {
       routeMutation.reset();
     } catch {
       setPermissionState('error');
-      setActionError('No pudimos obtener tu ubicación. Inténtalo nuevamente.');
+      setActionError(t('map.locationFetchError'));
     } finally {
       setIsLocating(false);
     }
@@ -183,7 +182,7 @@ export function MapScreen() {
       if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Unsafe protocol');
       await Linking.openURL(parsed.toString());
     } catch {
-      setActionError('No pudimos abrir la aplicación de navegación.');
+      setActionError(t('map.navigationOpenError'));
     }
   };
 
@@ -204,16 +203,16 @@ export function MapScreen() {
     >
       <View style={{ gap: spacing.xs }}>
         <Text selectable style={{ color: colors.label, fontSize: 24, fontWeight: '900' }}>
-          Explora Manta en el mapa
+          {t('map.screenTitle')}
         </Text>
         <Text selectable style={{ color: colors.secondaryLabel, fontSize: 15, lineHeight: 22 }}>
-          Selecciona un marcador para conocer el lugar o calcular una ruta.
+          {t('map.screenDescription')}
         </Text>
       </View>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
         <FilterChip
-          label="Todas"
+          label={t('explore.all')}
           onPress={() => {
             setSelectedCategoryId(null);
             setSelectedPlaceId(null);
@@ -237,13 +236,13 @@ export function MapScreen() {
       </View>
 
       {placesPending ? (
-        <LoadingState label="Ubicando lugares turísticos…" />
+        <LoadingState label={t('map.placesLoading')} />
       ) : placesError ? (
         <FeedbackState
-          actionLabel="Reintentar"
-          description="No pudimos consultar los lugares para el mapa."
+          actionLabel={t('common.retry')}
+          description={t('map.unavailableDescription')}
           onAction={() => void (userLocation ? nearbyQuery.refetch() : catalogQuery.refetch())}
-          title="Mapa no disponible"
+          title={t('map.unavailableTitle')}
           tone="error"
         />
       ) : (
@@ -274,8 +273,9 @@ export function MapScreen() {
         >
           {places.map((place) => (
             <Pressable
-              accessibilityLabel={`Seleccionar ${place.name} en el mapa`}
+              accessibilityLabel={`${t('map.selectOnMap')}: ${place.name}`}
               accessibilityRole="button"
+              accessibilityState={{ selected: selectedPlaceId === place.id }}
               key={place.id}
               onPress={() => selectPlace(place.id)}
               style={({ pressed }) => ({
@@ -308,15 +308,15 @@ export function MapScreen() {
       {userLocation && !isWithinManta(userLocation) ? (
         <StatusCard
           accent={brandColors.sun}
-          description="Puedes seguir viendo el catálogo. Las rutas usarán el centro de Manta como origen porque el proveedor solo acepta coordenadas del cantón."
-          title="Tu ubicación está fuera del área de Manta"
+          description={t('map.outsideDescription')}
+          title={t('map.outsideTitle')}
         />
       ) : null}
 
       {userLocation && nearbyQuery.isSuccess ? (
         <StatusCard
-          description={`${places.length} lugares encontrados en un radio de 15 km mediante PostGIS.`}
-          title="Lugares cercanos actualizados"
+          description={`${places.length} ${t('map.nearbyFound')}`}
+          title={t('map.nearbyUpdated')}
         />
       ) : null}
 
@@ -357,18 +357,18 @@ export function MapScreen() {
           </Text>
           {selectedPlace.distanceMeters !== undefined ? (
             <Text selectable style={{ color: colors.secondaryLabel, fontSize: 13 }}>
-              A {formatDistance(selectedPlace.distanceMeters)} de tu ubicación aproximada
+              {formatDistance(selectedPlace.distanceMeters)} {t('map.distanceFromYou')}
             </Text>
           ) : null}
 
           <Text selectable style={{ color: colors.label, fontSize: 15, fontWeight: '800' }}>
-            Vista previa de ruta
+            {t('map.routePreview')}
           </Text>
           <Text selectable style={{ color: colors.secondaryLabel, fontSize: 13, lineHeight: 19 }}>
-            Origen:{' '}
+            {t('map.origin')}:{' '}
             {userLocation && isWithinManta(userLocation)
-              ? 'tu ubicación actual'
-              : 'centro de Manta'}
+              ? t('map.currentOrigin')
+              : t('map.mantaOrigin')}
             .
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
@@ -385,16 +385,16 @@ export function MapScreen() {
             ))}
           </View>
           <AppButton
-            label="Calcular ruta"
+            label={t('map.calculate')}
             loading={routeMutation.isPending}
             onPress={calculateRoute}
           />
           {routeMutation.isError ? (
             <FeedbackState
-              actionLabel="Reintentar"
+              actionLabel={t('common.retry')}
               description={routeMutation.error.message}
               onAction={calculateRoute}
-              title="No pudimos calcular la ruta"
+              title={t('map.routeError')}
               tone="error"
             />
           ) : null}
@@ -410,11 +410,11 @@ export function MapScreen() {
               }}
             >
               <RouteMetric
-                label="Distancia"
+                label={t('map.distanceMetric')}
                 value={formatDistance(routeMutation.data.distanceMeters)}
               />
               <RouteMetric
-                label="Duración estimada"
+                label={t('map.durationMetric')}
                 value={formatDuration(routeMutation.data.durationSeconds)}
               />
             </View>
@@ -423,7 +423,7 @@ export function MapScreen() {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             <View style={{ flexGrow: 1, minWidth: 190 }}>
               <AppButton
-                label="Abrir Google Maps"
+                label={t('map.openGoogle')}
                 onPress={() =>
                   void openExternalUrl(buildGoogleMapsUrl(selectedPlace, routeProfile))
                 }
@@ -432,31 +432,27 @@ export function MapScreen() {
             </View>
             <View style={{ flexGrow: 1, minWidth: 160 }}>
               <AppButton
-                label="Abrir Waze"
+                label={t('map.openWaze')}
                 onPress={() => void openExternalUrl(buildWazeUrl(selectedPlace))}
                 variant="secondary"
               />
             </View>
             <View style={{ flexGrow: 1, minWidth: 160 }}>
               <Link href={`/place/${selectedPlace.id}` as Href} asChild>
-                <AppButton label="Ver ficha completa" variant="ghost" />
+                <AppButton label={t('map.openDetails')} variant="ghost" />
               </Link>
             </View>
           </View>
         </View>
       ) : (
         <StatusCard
-          description="Toca cualquier marcador o nombre de lugar para ver su información y calcular una ruta."
-          title="Selecciona un destino"
+          description={t('map.destinationDescription')}
+          title={t('map.destinationTitle')}
         />
       )}
 
       {actionError ? (
-        <FeedbackState
-          description={actionError}
-          title="No pudimos completar la acción"
-          tone="error"
-        />
+        <FeedbackState description={actionError} title={t('map.actionError')} tone="error" />
       ) : null}
     </ScrollView>
   );
@@ -475,6 +471,7 @@ function LocationPanel({
   permissionState: LocationPermissionState;
   userLocation: RouteCoordinate | null;
 }) {
+  const { t } = useLocale();
   return (
     <View
       style={{
@@ -488,14 +485,13 @@ function LocationPanel({
       }}
     >
       <Text selectable style={{ color: colors.label, fontSize: 19, fontWeight: '900' }}>
-        Lugares cerca de ti
+        {t('map.nearYou')}
       </Text>
       <Text selectable style={{ color: colors.secondaryLabel, fontSize: 14, lineHeight: 21 }}>
-        Solo pediremos tu ubicación al usar esta función. Se envía temporalmente para calcular
-        cercanía y rutas, pero MantaViews no la almacena.
+        {t('map.privacyDescription')}
       </Text>
       <AppButton
-        label={userLocation ? 'Actualizar mi ubicación' : 'Usar mi ubicación'}
+        label={userLocation ? t('map.updateLocation') : t('map.useLocation')}
         loading={isLocating}
         onPress={onRequestLocation}
         variant="secondary"
@@ -503,32 +499,32 @@ function LocationPanel({
       {permissionState === 'denied' ? (
         <StatusCard
           accent={brandColors.sun}
-          description="Puedes continuar usando el mapa sin ubicación o volver a intentar cuando quieras."
-          title="Permiso no concedido"
+          description={t('map.permissionDeniedDescription')}
+          title={t('map.permissionDeniedTitle')}
         />
       ) : null}
       {permissionState === 'blocked' ? (
         <View style={{ gap: spacing.sm }}>
           <StatusCard
             accent={brandColors.sun}
-            description="El sistema ya no permite solicitarlo desde la app. Puedes activarlo manualmente."
-            title="Permiso bloqueado"
+            description={t('map.permissionBlockedDescription')}
+            title={t('map.permissionBlockedTitle')}
           />
-          <AppButton label="Abrir ajustes" onPress={onOpenSettings} variant="ghost" />
+          <AppButton label={t('map.openSettings')} onPress={onOpenSettings} variant="ghost" />
         </View>
       ) : null}
       {permissionState === 'services-disabled' ? (
         <StatusCard
           accent={brandColors.sun}
-          description="Activa la ubicación del dispositivo y vuelve a intentarlo."
-          title="Ubicación desactivada"
+          description={t('map.servicesDisabledDescription')}
+          title={t('map.servicesDisabledTitle')}
         />
       ) : null}
       {permissionState === 'error' ? (
         <StatusCard
           accent={colors.error}
-          description="La ubicación no está disponible por el momento. El catálogo y las rutas desde el centro de Manta siguen funcionando."
-          title="No pudimos consultar la ubicación"
+          description={t('map.locationUnavailableDescription')}
+          title={t('map.locationUnavailableTitle')}
         />
       ) : null}
     </View>

@@ -7,12 +7,14 @@ import { AuthButton } from '@/components/auth/auth-button';
 import { AuthField } from '@/components/auth/auth-field';
 import { AuthNotice } from '@/components/auth/auth-notice';
 import { AuthScreenLayout } from '@/components/auth/auth-screen-layout';
+import { useLocale } from '@/providers/locale-provider';
 import { getAuthErrorMessage } from '@/services/auth/auth-errors';
 import { signInWithGoogle, signInWithPassword } from '@/services/auth/auth-service';
 import { validateEmail } from '@/services/auth/auth-validation';
 import { brandColors, colors, spacing } from '@/theme';
 
 export function SignInScreen() {
+  const { locale, t } = useLocale();
   const { next } = useLocalSearchParams<{ next?: string }>();
   const destination = typeof next === 'string' && next.startsWith('/') ? next : '/(tabs)/profile';
   const [email, setEmail] = useState('');
@@ -22,13 +24,13 @@ export function SignInScreen() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const handleSignIn = async () => {
-    const emailError = validateEmail(email);
+    const emailError = validateEmail(email, locale);
     if (emailError) {
       setError(emailError);
       return;
     }
     if (!password) {
-      setError('Ingresa tu contraseña.');
+      setError(t('auth.passwordRequired'));
       return;
     }
 
@@ -38,7 +40,7 @@ export function SignInScreen() {
       await signInWithPassword(email, password);
       router.replace(destination as Href);
     } catch (caughtError) {
-      setError(getAuthErrorMessage(caughtError));
+      setError(getAuthErrorMessage(caughtError, locale));
     } finally {
       setIsSubmitting(false);
     }
@@ -51,7 +53,7 @@ export function SignInScreen() {
       const session = await signInWithGoogle(destination);
       if (session || process.env.EXPO_OS !== 'web') router.replace(destination as Href);
     } catch (caughtError) {
-      setError(getAuthErrorMessage(caughtError));
+      setError(getAuthErrorMessage(caughtError, locale));
     } finally {
       setIsGoogleLoading(false);
     }
@@ -59,8 +61,8 @@ export function SignInScreen() {
 
   return (
     <AuthScreenLayout
-      title="Iniciar sesión"
-      subtitle="Explorar es gratis y no requiere cuenta. Inicia sesión para guardar, votar y comentar."
+      title={t('auth.signIn')}
+      subtitle={t('auth.signInSubtitle')}
       footer={
         <View
           style={{
@@ -71,13 +73,15 @@ export function SignInScreen() {
           }}
         >
           <Text selectable style={{ color: colors.secondaryLabel }}>
-            ¿No tienes cuenta?
+            {t('auth.noAccount')}
           </Text>
           <Pressable
             accessibilityRole="link"
             onPress={() => router.push(`/sign-up?next=${encodeURIComponent(destination)}` as Href)}
           >
-            <Text style={{ color: brandColors.primary, fontWeight: '800' }}>Regístrate</Text>
+            <Text style={{ color: brandColors.primary, fontWeight: '800' }}>
+              {t('auth.register')}
+            </Text>
           </Pressable>
         </View>
       }
@@ -87,7 +91,7 @@ export function SignInScreen() {
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
-        label="Correo electrónico"
+        label={t('auth.email')}
         onChangeText={setEmail}
         placeholder="turista@ejemplo.com"
         returnKeyType="next"
@@ -97,10 +101,10 @@ export function SignInScreen() {
       <AuthField
         autoCapitalize="none"
         autoComplete="current-password"
-        label="Contraseña"
+        label={t('auth.password')}
         onChangeText={setPassword}
         onSubmitEditing={() => void handleSignIn()}
-        placeholder="Tu contraseña"
+        placeholder={t('auth.passwordPlaceholder')}
         returnKeyType="done"
         secureTextEntry
         textContentType="password"
@@ -108,27 +112,32 @@ export function SignInScreen() {
       />
 
       <Link href="/forgot-password" asChild>
-        <Pressable hitSlop={8} style={{ alignSelf: 'flex-end' }}>
+        <Pressable
+          accessibilityLabel={t('auth.forgotPassword')}
+          accessibilityRole="link"
+          hitSlop={8}
+          style={{ alignSelf: 'flex-end' }}
+        >
           <Text style={{ color: brandColors.primary, fontSize: 14, fontWeight: '700' }}>
-            ¿Olvidaste tu contraseña?
+            {t('auth.forgotPassword')}
           </Text>
         </Pressable>
       </Link>
 
       <AuthButton
-        label="Iniciar sesión"
+        label={t('auth.signIn')}
         loading={isSubmitting}
         onPress={() => void handleSignIn()}
       />
 
       <View style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.sm }}>
         <View style={{ backgroundColor: colors.separator, flex: 1, height: 1 }} />
-        <Text style={{ color: colors.secondaryLabel, fontSize: 13 }}>o continúa con</Text>
+        <Text style={{ color: colors.secondaryLabel, fontSize: 13 }}>{t('auth.continueWith')}</Text>
         <View style={{ backgroundColor: colors.separator, flex: 1, height: 1 }} />
       </View>
 
       <AuthButton
-        label="Continuar con Google"
+        label={t('auth.google')}
         loading={isGoogleLoading}
         onPress={() => void handleGoogleSignIn()}
         variant="secondary"

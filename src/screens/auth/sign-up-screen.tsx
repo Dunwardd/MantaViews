@@ -7,6 +7,7 @@ import { AuthButton } from '@/components/auth/auth-button';
 import { AuthField } from '@/components/auth/auth-field';
 import { AuthNotice } from '@/components/auth/auth-notice';
 import { AuthScreenLayout } from '@/components/auth/auth-screen-layout';
+import { useLocale } from '@/providers/locale-provider';
 import { getAuthErrorMessage } from '@/services/auth/auth-errors';
 import { signUpWithPassword } from '@/services/auth/auth-service';
 import {
@@ -17,6 +18,7 @@ import {
 import { brandColors, colors, spacing } from '@/theme';
 
 export function SignUpScreen() {
+  const { locale, t } = useLocale();
   const { next } = useLocalSearchParams<{ next?: string }>();
   const destination = typeof next === 'string' && next.startsWith('/') ? next : '/(tabs)/profile';
   const [displayName, setDisplayName] = useState('');
@@ -29,11 +31,11 @@ export function SignUpScreen() {
 
   const handleSignUp = async () => {
     const validationError =
-      validateDisplayName(displayName) ??
-      validateEmail(email) ??
-      validatePassword(password) ??
-      (password !== confirmation ? 'Las contraseñas no coinciden.' : undefined) ??
-      (!acceptsPrivacy ? 'Debes aceptar el aviso de privacidad para crear la cuenta.' : undefined);
+      validateDisplayName(displayName, locale) ??
+      validateEmail(email, locale) ??
+      validatePassword(password, locale) ??
+      (password !== confirmation ? t('auth.passwordMismatch') : undefined) ??
+      (!acceptsPrivacy ? t('auth.privacyRequired') : undefined);
 
     if (validationError) {
       setError(validationError);
@@ -47,12 +49,10 @@ export function SignUpScreen() {
       if (data.session) {
         router.replace(destination as Href);
       } else {
-        setError(
-          'La cuenta fue creada, pero Supabase aún exige confirmar el correo. Desactiva Confirm email en Authentication → Sign In / Providers → Email.',
-        );
+        setError(t('auth.confirmEmailUnexpected'));
       }
     } catch (caughtError) {
-      setError(getAuthErrorMessage(caughtError));
+      setError(getAuthErrorMessage(caughtError, locale));
     } finally {
       setIsSubmitting(false);
     }
@@ -60,8 +60,8 @@ export function SignUpScreen() {
 
   return (
     <AuthScreenLayout
-      title="Crear cuenta"
-      subtitle="Regístrate para participar en la comunidad turística de Manta."
+      title={t('auth.signUp')}
+      subtitle={t('auth.signUpSubtitle')}
       footer={
         <View
           style={{
@@ -72,13 +72,15 @@ export function SignUpScreen() {
           }}
         >
           <Text selectable style={{ color: colors.secondaryLabel }}>
-            ¿Ya tienes cuenta?
+            {t('auth.hasAccount')}
           </Text>
           <Pressable
             accessibilityRole="link"
             onPress={() => router.push(`/sign-in?next=${encodeURIComponent(destination)}` as Href)}
           >
-            <Text style={{ color: brandColors.primary, fontWeight: '800' }}>Inicia sesión</Text>
+            <Text style={{ color: brandColors.primary, fontWeight: '800' }}>
+              {t('auth.signIn')}
+            </Text>
           </Pressable>
         </View>
       }
@@ -87,10 +89,10 @@ export function SignUpScreen() {
       <AuthField
         autoCapitalize="words"
         autoComplete="name"
-        label="Nombre visible"
+        label={t('auth.displayName')}
         maxLength={80}
         onChangeText={setDisplayName}
-        placeholder="¿Cómo quieres aparecer?"
+        placeholder={t('auth.displayNamePlaceholder')}
         textContentType="name"
         value={displayName}
       />
@@ -98,7 +100,7 @@ export function SignUpScreen() {
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
-        label="Correo electrónico"
+        label={t('auth.email')}
         onChangeText={setEmail}
         placeholder="turista@ejemplo.com"
         textContentType="emailAddress"
@@ -107,9 +109,9 @@ export function SignUpScreen() {
       <AuthField
         autoCapitalize="none"
         autoComplete="new-password"
-        label="Contraseña"
+        label={t('auth.password')}
         onChangeText={setPassword}
-        placeholder="8+ caracteres, letra y número"
+        placeholder={t('auth.passwordRules')}
         secureTextEntry
         textContentType="newPassword"
         value={password}
@@ -117,10 +119,10 @@ export function SignUpScreen() {
       <AuthField
         autoCapitalize="none"
         autoComplete="new-password"
-        label="Confirmar contraseña"
+        label={t('auth.confirmPassword')}
         onChangeText={setConfirmation}
         onSubmitEditing={() => void handleSignUp()}
-        placeholder="Repite tu contraseña"
+        placeholder={t('auth.repeatPassword')}
         secureTextEntry
         textContentType="newPassword"
         value={confirmation}
@@ -128,7 +130,7 @@ export function SignUpScreen() {
 
       <View style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.md }}>
         <Switch
-          accessibilityLabel="Aceptar aviso de privacidad"
+          accessibilityLabel={t('auth.acceptPrivacy')}
           onValueChange={setAcceptsPrivacy}
           trackColor={{ false: colors.separator, true: brandColors.lightOcean }}
           thumbColor={acceptsPrivacy ? brandColors.primary : undefined}
@@ -138,11 +140,15 @@ export function SignUpScreen() {
           selectable
           style={{ color: colors.secondaryLabel, flex: 1, fontSize: 13, lineHeight: 19 }}
         >
-          Acepto que MantaViews use mi nombre y correo para gestionar mi cuenta y participación.
+          {t('auth.privacyNotice')}
         </Text>
       </View>
 
-      <AuthButton label="Crear cuenta" loading={isSubmitting} onPress={() => void handleSignUp()} />
+      <AuthButton
+        label={t('auth.signUp')}
+        loading={isSubmitting}
+        onPress={() => void handleSignUp()}
+      />
     </AuthScreenLayout>
   );
 }

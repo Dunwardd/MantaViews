@@ -13,7 +13,7 @@ import { brandColors, colors, layout, spacing } from '@/theme';
 
 export function FavoritesScreen() {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const favoritesQuery = useQuery({
     enabled: Boolean(user?.id),
     queryFn: () => getFavoritePlaces(user!.id, locale),
@@ -33,15 +33,15 @@ export function FavoritesScreen() {
       style={{ backgroundColor: colors.background }}
     >
       {isLoading ? (
-        <LoadingState label="Consultando tus favoritos…" />
+        <LoadingState label={t('favorites.checking')} />
       ) : isAuthenticated && favoritesQuery.isPending ? (
-        <LoadingState label="Cargando tus lugares guardados…" />
+        <LoadingState label={t('favorites.loading')} />
       ) : isAuthenticated && favoritesQuery.isError ? (
         <FeedbackState
-          actionLabel="Reintentar"
-          description="No pudimos consultar tus favoritos."
+          actionLabel={t('common.retry')}
+          description={t('favorites.unavailableDescription')}
           onAction={() => void favoritesQuery.refetch()}
-          title="Favoritos no disponibles"
+          title={t('favorites.unavailableTitle')}
           tone="error"
         />
       ) : isAuthenticated && favoritesQuery.data?.length ? (
@@ -56,18 +56,18 @@ export function FavoritesScreen() {
         </View>
       ) : isAuthenticated ? (
         <FeedbackState
-          title="Tus lugares favoritos"
-          description="Todavía no has guardado lugares. Cuando marques uno como favorito aparecerá aquí."
+          title={t('favorites.emptyTitle')}
+          description={t('favorites.emptyDescription')}
         />
       ) : (
         <>
           <StatusCard
             accent={brandColors.lime}
-            title="Guarda lugares para después"
-            description="Inicia sesión para sincronizar tus playas, restaurantes y actividades favoritas."
+            title={t('favorites.loginTitle')}
+            description={t('favorites.loginDescription')}
           />
           <AuthButton
-            label="Iniciar sesión"
+            label={t('auth.signIn')}
             onPress={() =>
               router.push({ pathname: '/sign-in', params: { next: '/(tabs)/favorites' } })
             }

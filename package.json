@@ -13,6 +13,7 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "format:check": "prettier --check .",
+    "test:unit": "node --experimental-strip-types --test \"tests/unit/*.test.mjs\"",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "db:reset": "supabase db reset",

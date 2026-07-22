@@ -31,7 +31,7 @@ export function OnboardingScreen() {
     >
       <View style={{ alignItems: 'center', gap: spacing.md, paddingTop: spacing.xl }}>
         <Image
-          accessibilityLabel="Logo de MantaViews"
+          accessibilityLabel={t('explore.logo')}
           contentFit="contain"
           source={require('../../../assets/images/mantaviews-app-icon.png')}
           style={{ borderRadius: 28, height: 132, width: 132 }}

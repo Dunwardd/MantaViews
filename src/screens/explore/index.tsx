@@ -23,21 +23,19 @@ import { distanceInMeters, MANTA_CENTER } from '@/utils/geo';
 
 const PAGE_SIZE = 4;
 
-const distanceOptions = [
-  { label: 'Todas', value: null },
-  { label: 'Hasta 3 km', value: 3_000 },
-  { label: 'Hasta 8 km', value: 8_000 },
-  { label: 'Hasta 15 km', value: 15_000 },
-] as const;
-
-const ratingOptions = [
-  { label: 'Todas', value: 0 },
-  { label: '3 estrellas o más', value: 3 },
-  { label: '4 estrellas o más', value: 4 },
-] as const;
-
 export function ExploreScreen() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
+  const distanceOptions = [
+    { label: t('explore.all'), value: null },
+    { label: t('explore.distance3'), value: 3_000 },
+    { label: t('explore.distance8'), value: 8_000 },
+    { label: t('explore.distance15'), value: 15_000 },
+  ] as const;
+  const ratingOptions = [
+    { label: t('explore.all'), value: 0 },
+    { label: t('explore.rating3'), value: 3 },
+    { label: t('explore.rating4'), value: 4 },
+  ] as const;
   const { user } = useAuth();
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -84,9 +82,7 @@ export function ExploreScreen() {
         permission = await Location.requestForegroundPermissionsAsync();
       }
       if (!permission.granted) {
-        setLocationNotice(
-          'Puedes continuar sin ubicación; las recomendaciones seguirán funcionando.',
-        );
+        setLocationNotice(t('explore.locationDenied'));
         return;
       }
       const lastKnown = await Location.getLastKnownPositionAsync({
@@ -100,9 +96,9 @@ export function ExploreScreen() {
         latitude: current.coords.latitude,
         longitude: current.coords.longitude,
       });
-      setLocationNotice('Cercanía incorporada sin almacenar tu ubicación.');
+      setLocationNotice(t('explore.locationUsed'));
     } catch {
-      setLocationNotice('No pudimos consultar la ubicación; usamos popularidad e intereses.');
+      setLocationNotice(t('explore.locationError'));
     } finally {
       setIsLocatingRecommendations(false);
     }
@@ -194,7 +190,7 @@ export function ExploreScreen() {
         }}
       >
         <Image
-          accessibilityLabel="Logo de MantaViews"
+          accessibilityLabel={t('explore.logo')}
           source={require('../../../assets/images/mantaviews-app-icon.png')}
           contentFit="contain"
           style={{ borderRadius: 24, height: 150, width: 150 }}
@@ -212,13 +208,13 @@ export function ExploreScreen() {
             textAlign: 'center',
           }}
         >
-          Descubre, explora y vive los mejores lugares turísticos de Manta.
+          {t('explore.hero')}
         </Text>
       </View>
 
       <View style={{ gap: spacing.sm }}>
         <Text selectable style={{ color: colors.label, fontSize: 22, fontWeight: '800' }}>
-          ¿Qué quieres conocer?
+          {t('explore.question')}
         </Text>
         <View
           style={{
@@ -238,12 +234,12 @@ export function ExploreScreen() {
             🔎
           </Text>
           <TextInput
-            accessibilityLabel="Buscar lugares turísticos"
+            accessibilityLabel={t('explore.searchLabel')}
             autoCapitalize="sentences"
             autoCorrect={false}
             maxLength={100}
             onChangeText={setSearchText}
-            placeholder="Busca una playa, museo o actividad"
+            placeholder={t('explore.searchPlaceholder')}
             placeholderTextColor={colors.secondaryLabel}
             returnKeyType="search"
             style={{ color: colors.label, flex: 1, fontSize: 16, paddingVertical: spacing.md }}
@@ -251,14 +247,14 @@ export function ExploreScreen() {
           />
           {searchText.length > 0 ? (
             <Pressable
-              accessibilityLabel="Limpiar búsqueda"
+              accessibilityLabel={t('explore.clearSearch')}
               accessibilityRole="button"
               hitSlop={10}
               onPress={() => setSearchText('')}
               style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1, padding: spacing.xs })}
             >
               <Text style={{ color: brandColors.primary, fontSize: 14, fontWeight: '800' }}>
-                Limpiar
+                {t('explore.clear')}
               </Text>
             </Pressable>
           ) : null}
@@ -267,23 +263,23 @@ export function ExploreScreen() {
 
       <View style={{ gap: spacing.md }}>
         <SectionHeading
-          description="Datos consultados en tiempo real desde Supabase Cloud"
-          title="Explora por categoría"
+          description={t('explore.categoriesDescription')}
+          title={t('explore.categoriesTitle')}
         />
         {categoriesQuery.isPending ? (
-          <LoadingState label="Consultando categorías…" />
+          <LoadingState label={t('explore.categoriesLoading')} />
         ) : categoriesQuery.isError ? (
           <FeedbackState
-            actionLabel="Reintentar"
-            description="No pudimos consultar las categorías. Revisa tu conexión a internet."
+            actionLabel={t('common.retry')}
+            description={t('explore.categoriesErrorDescription')}
             onAction={() => void categoriesQuery.refetch()}
-            title="Sin conexión al catálogo"
+            title={t('explore.categoriesErrorTitle')}
             tone="error"
           />
         ) : (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             <FilterChip
-              label="Todas"
+              label={t('explore.all')}
               onPress={() => setSelectedCategoryId(null)}
               selected={selectedCategoryId === null}
             />
@@ -306,11 +302,11 @@ export function ExploreScreen() {
 
       <View style={{ gap: spacing.md }}>
         <SectionHeading
-          description="La ubicación del teléfono se incorporará en la siguiente fase; por ahora usamos el centro de Manta."
-          title="Afina tu búsqueda"
+          description={t('explore.filtersDescription')}
+          title={t('explore.filtersTitle')}
         />
         <Text selectable style={{ color: colors.label, fontSize: 14, fontWeight: '800' }}>
-          Distancia
+          {t('explore.distance')}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {distanceOptions.map((option) => (
@@ -323,7 +319,7 @@ export function ExploreScreen() {
           ))}
         </View>
         <Text selectable style={{ color: colors.label, fontSize: 14, fontWeight: '800' }}>
-          Valoración mínima
+          {t('explore.rating')}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {ratingOptions.map((option) => (
@@ -339,15 +335,11 @@ export function ExploreScreen() {
 
       <View style={{ gap: spacing.md }}>
         <SectionHeading
-          description={
-            user
-              ? 'Combina tus intereses, valoraciones, popularidad y diversidad de categorías.'
-              : 'Selección popular y variada para explorar Manta sin crear una cuenta.'
-          }
-          title="Recomendados para ti"
+          description={user ? t('explore.recommendationsUser') : t('explore.recommendationsGuest')}
+          title={t('explore.recommendationsTitle')}
         />
         <AppButton
-          label={recommendationLocation ? 'Actualizar mi ubicación' : 'Mejorar con mi ubicación'}
+          label={recommendationLocation ? t('explore.updateLocation') : t('explore.useLocation')}
           loading={isLocatingRecommendations}
           onPress={() => void improveRecommendationsWithLocation()}
           variant="secondary"
@@ -358,19 +350,19 @@ export function ExploreScreen() {
           </Text>
         ) : null}
         {recommendationsQuery.isPending ? (
-          <LoadingState label="Preparando recomendaciones…" />
+          <LoadingState label={t('explore.recommendationsLoading')} />
         ) : recommendationsQuery.isError ? (
           <FeedbackState
-            actionLabel="Reintentar"
-            description="Las recomendaciones no están disponibles en este momento."
+            actionLabel={t('common.retry')}
+            description={t('explore.recommendationsErrorDescription')}
             onAction={() => void recommendationsQuery.refetch()}
-            title="No pudimos recomendar lugares"
+            title={t('explore.recommendationsErrorTitle')}
             tone="error"
           />
         ) : recommendationsQuery.data.length === 0 ? (
           <FeedbackState
-            description="Publica más lugares para alimentar el motor de recomendaciones."
-            title="Aún no hay recomendaciones"
+            description={t('explore.recommendationsEmptyDescription')}
+            title={t('explore.recommendationsEmptyTitle')}
           />
         ) : (
           <ScrollView
@@ -395,34 +387,34 @@ export function ExploreScreen() {
 
       <View style={{ gap: spacing.md }}>
         <SectionHeading
-          description={`${visiblePlaces.length} de ${loadedPlaces.length} lugares cargados coinciden con tus filtros`}
-          title="Lugares para descubrir"
+          description={`${visiblePlaces.length} / ${loadedPlaces.length} ${t('explore.placesMatch')}`}
+          title={t('explore.placesTitle')}
         />
 
         {placesQuery.isPending ? (
-          <LoadingState label="Buscando lugares para ti…" />
+          <LoadingState label={t('explore.placesLoading')} />
         ) : placesQuery.isError ? (
           <FeedbackState
-            actionLabel="Reintentar"
-            description="No pudimos consultar los lugares turísticos. Revisa tu conexión a internet."
+            actionLabel={t('common.retry')}
+            description={t('explore.placesErrorDescription')}
             onAction={() => void placesQuery.refetch()}
-            title="No pudimos cargar los lugares"
+            title={t('explore.placesErrorTitle')}
             tone="error"
           />
         ) : visiblePlaces.length === 0 ? (
           <FeedbackState
             actionLabel={
               placesQuery.hasNextPage && hasLocalFilters
-                ? 'Buscar en más resultados'
-                : 'Limpiar filtros'
+                ? t('explore.moreResults')
+                : t('explore.clearFilters')
             }
-            description="Prueba otros filtros o amplía la búsqueda para encontrar más lugares."
+            description={t('explore.noResultsDescription')}
             onAction={() =>
               placesQuery.hasNextPage && hasLocalFilters
                 ? void placesQuery.fetchNextPage()
                 : clearFilters()
             }
-            title="Sin resultados visibles"
+            title={t('explore.noResultsTitle')}
           />
         ) : (
           <View style={{ gap: spacing.md }}>
@@ -441,16 +433,13 @@ export function ExploreScreen() {
             })}
             {placesQuery.hasNextPage ? (
               <AppButton
-                label="Cargar más lugares"
+                label={t('explore.loadMore')}
                 loading={placesQuery.isFetchingNextPage}
                 onPress={() => void placesQuery.fetchNextPage()}
                 variant="secondary"
               />
             ) : (
-              <StatusCard
-                title="Has llegado al final"
-                description="Ya cargaste todos los lugares que coinciden con la búsqueda del catálogo."
-              />
+              <StatusCard title={t('explore.endTitle')} description={t('explore.endDescription')} />
             )}
           </View>
         )}

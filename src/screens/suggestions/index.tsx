@@ -16,7 +16,7 @@ import { colors, layout, spacing, typography } from '@/theme';
 
 export function SuggestionsScreen() {
   const { user } = useAuth();
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -36,11 +36,9 @@ export function SuggestionsScreen() {
   });
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!user || !categoryId) throw new Error('Selecciona una categoría.');
+      if (!user || !categoryId) throw new Error(t('suggestions.selectCategory'));
       if (name.trim().length < 2 || description.trim().length < 20 || address.trim().length < 3)
-        throw new Error(
-          'Completa el nombre, la dirección y una descripción de al menos 20 caracteres.',
-        );
+        throw new Error(t('suggestions.incomplete'));
       const lat = Number(latitude);
       const lng = Number(longitude);
       if (
@@ -51,9 +49,9 @@ export function SuggestionsScreen() {
         lng < -180 ||
         lng > 180
       )
-        throw new Error('Las coordenadas no son válidas.');
+        throw new Error(t('suggestions.invalidCoordinates'));
       if (evidenceUrl && !/^https:\/\//i.test(evidenceUrl.trim()))
-        throw new Error('La evidencia debe comenzar con https://.');
+        throw new Error(t('suggestions.invalidEvidence'));
       return createPlaceSuggestion(user.id, {
         address,
         categoryId,
@@ -75,7 +73,10 @@ export function SuggestionsScreen() {
 
   if (!user)
     return (
-      <FeedbackState description="Inicia sesión para proponer lugares." title="Sesión requerida" />
+      <FeedbackState
+        description={t('suggestions.loginRequired')}
+        title={t('account.sessionRequired')}
+      />
     );
 
   return (
@@ -90,21 +91,28 @@ export function SuggestionsScreen() {
       }}
       style={{ backgroundColor: colors.background }}
     >
-      <Text style={{ ...typography.heading, color: colors.label }}>Sugerir un lugar turístico</Text>
-      <AppInput label="Nombre" maxLength={150} onChangeText={setName} value={name} />
+      <Text selectable style={{ ...typography.heading, color: colors.label }}>
+        {t('suggestions.title')}
+      </Text>
+      <AppInput label={t('suggestions.name')} maxLength={150} onChangeText={setName} value={name} />
       <AppInput
-        label="Descripción"
+        label={t('suggestions.description')}
         maxLength={1500}
         multiline
         onChangeText={setDescription}
         value={description}
       />
-      <AppInput label="Dirección" maxLength={250} onChangeText={setAddress} value={address} />
+      <AppInput
+        label={t('suggestions.address')}
+        maxLength={250}
+        onChangeText={setAddress}
+        value={address}
+      />
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
         <View style={{ flex: 1 }}>
           <AppInput
             keyboardType="decimal-pad"
-            label="Latitud"
+            label={t('suggestions.latitude')}
             onChangeText={setLatitude}
             value={latitude}
           />
@@ -112,7 +120,7 @@ export function SuggestionsScreen() {
         <View style={{ flex: 1 }}>
           <AppInput
             keyboardType="decimal-pad"
-            label="Longitud"
+            label={t('suggestions.longitude')}
             onChangeText={setLongitude}
             value={longitude}
           />
@@ -121,12 +129,12 @@ export function SuggestionsScreen() {
       <AppInput
         autoCapitalize="none"
         keyboardType="url"
-        label="Enlace de evidencia (opcional)"
+        label={t('suggestions.evidence')}
         onChangeText={setEvidenceUrl}
         value={evidenceUrl}
       />
       {categoriesQuery.isPending ? (
-        <LoadingState label="Cargando categorías…" />
+        <LoadingState label={t('suggestions.categoriesLoading')} />
       ) : (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {(categoriesQuery.data ?? []).map((category) => (
@@ -140,25 +148,25 @@ export function SuggestionsScreen() {
           ))}
         </View>
       )}
-      {mutation.isSuccess ? (
-        <AuthNotice message="Sugerencia enviada. Quedó pendiente de revisión." tone="success" />
-      ) : null}
+      {mutation.isSuccess ? <AuthNotice message={t('suggestions.sent')} tone="success" /> : null}
       {mutation.error ? <AuthNotice message={(mutation.error as Error).message} /> : null}
       <AppButton
-        label="Enviar sugerencia"
+        label={t('suggestions.send')}
         loading={mutation.isPending}
         onPress={() => mutation.mutate()}
       />
 
-      <Text style={{ ...typography.heading, color: colors.label }}>Mis sugerencias</Text>
+      <Text selectable style={{ ...typography.heading, color: colors.label }}>
+        {t('suggestions.mine')}
+      </Text>
       {suggestionsQuery.isPending ? (
-        <LoadingState label="Consultando sugerencias…" />
+        <LoadingState label={t('suggestions.loading')} />
       ) : suggestionsQuery.data?.length ? (
         suggestionsQuery.data.map((suggestion) => (
           <SurfaceCard key={suggestion.id}>
             <Text style={{ ...typography.bodyStrong, color: colors.label }}>{suggestion.name}</Text>
             <Text style={{ color: colors.secondaryLabel }}>
-              Estado: {statusLabel(suggestion.status)}
+              {t('suggestions.status')}: {statusLabel(suggestion.status, t)}
             </Text>
             {suggestion.reviewNotes ? (
               <Text style={{ color: colors.secondaryLabel }}>{suggestion.reviewNotes}</Text>
@@ -167,22 +175,22 @@ export function SuggestionsScreen() {
         ))
       ) : (
         <FeedbackState
-          description="Las propuestas que envíes aparecerán aquí."
-          title="Sin sugerencias"
+          description={t('suggestions.emptyDescription')}
+          title={t('suggestions.emptyTitle')}
         />
       )}
     </ScrollView>
   );
 }
 
-function statusLabel(status: string) {
+function statusLabel(status: string, t: ReturnType<typeof useLocale>['t']) {
   return (
     (
       {
-        archived: 'Archivada',
-        pending: 'Pendiente de revisión',
-        published: 'Aprobada',
-        rejected: 'Rechazada',
+        archived: t('suggestions.status.archived'),
+        pending: t('suggestions.status.pending'),
+        published: t('suggestions.status.published'),
+        rejected: t('suggestions.status.rejected'),
       } as Record<string, string>
     )[status] ?? status
   );

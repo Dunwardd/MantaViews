@@ -1,6 +1,7 @@
 import { Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/app-icon';
+import { useLocale } from '@/providers/locale-provider';
 import { brandColors, colors, spacing, typography } from '@/theme';
 
 type RatingDisplayProps = {
@@ -9,10 +10,11 @@ type RatingDisplayProps = {
 };
 
 export function RatingDisplay({ count, value }: RatingDisplayProps) {
+  const { t } = useLocale();
   const safeValue = Math.max(0, Math.min(value, 5));
   return (
     <View
-      accessibilityLabel={`${safeValue.toFixed(1)} de 5 estrellas`}
+      accessibilityLabel={`${safeValue.toFixed(1)} ${t('rating.label')}`}
       style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.xs }}
     >
       <AppIcon color={brandColors.sun} filled name="star" size={18} />

@@ -7,7 +7,7 @@ export const brandColors = {
   sun: '#F5A719',
   lime: '#A8B83F',
   ink: '#26383A',
-  muted: '#6B7C7E',
+  muted: '#5F7072',
   white: '#FFFFFF',
   coral: '#E66A4E',
 } as const;
@@ -31,17 +31,29 @@ export const colors = {
   errorSurface: '#FEF3F2',
 } as const;
 
+function relativeLuminance(color: string) {
+  const hex = color.replace('#', '');
+  if (!/^[0-9a-f]{6}$/i.test(hex)) return 0;
+  const [red = 0, green = 0, blue = 0] = [0, 2, 4]
+    .map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255)
+    .map((channel) => (channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4));
+  return red * 0.2126 + green * 0.7152 + blue * 0.0722;
+}
+
+export function getContrastRatio(foreground: string, background: string) {
+  const foregroundLuminance = relativeLuminance(foreground);
+  const backgroundLuminance = relativeLuminance(background);
+  return (
+    (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) /
+    (Math.min(foregroundLuminance, backgroundLuminance) + 0.05)
+  );
+}
+
 export function getReadableTextColor(backgroundColor: string) {
   const hex = backgroundColor.replace('#', '');
   if (!/^[0-9a-f]{6}$/i.test(hex)) return colors.label;
 
-  const channels = [0, 2, 4].map(
-    (offset) => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255,
-  );
-  const [red = 0, green = 0, blue = 0] = channels.map((channel) =>
-    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
-  );
-  const backgroundLuminance = red * 0.2126 + green * 0.7152 + blue * 0.0722;
+  const backgroundLuminance = relativeLuminance(backgroundColor);
   const deepTealLuminance = 0.064;
   const whiteContrast = 1.05 / (backgroundLuminance + 0.05);
   const tealContrast =

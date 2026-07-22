@@ -6,7 +6,7 @@ import { useLocale } from '@/providers/locale-provider';
 import { colors } from '@/theme';
 
 export default function IndexRoute() {
-  const { hasCompletedOnboarding, isHydrated } = useLocale();
+  const { hasCompletedOnboarding, isHydrated, t } = useLocale();
 
   if (!isHydrated) {
     return (
@@ -15,7 +15,7 @@ export default function IndexRoute() {
         contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
         style={{ backgroundColor: colors.background }}
       >
-        <LoadingState label="Preparando MantaViews…" />
+        <LoadingState label={t('app.preparing')} />
       </ScrollView>
     );
   }

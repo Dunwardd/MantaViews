@@ -45,6 +45,7 @@ export function FilterChip({
       })}
     >
       <Text
+        selectable
         style={{
           ...typography.caption,
           color: selected ? selectedTextColor : colors.label,

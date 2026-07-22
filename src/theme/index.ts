@@ -1,4 +1,4 @@
-export { brandColors, colors, getReadableTextColor } from './colors';
+export { brandColors, colors, getContrastRatio, getReadableTextColor } from './colors';
 
 export const spacing = {
   xs: 4,
