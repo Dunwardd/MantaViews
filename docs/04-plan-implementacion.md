@@ -279,11 +279,11 @@ Criterio de aceptación: no hay bloqueos funcionales, secretos expuestos ni text
 ## 16. Fase 13 — Datos, demo y entrega
 
 - [x] Cargar un catálogo técnico inicial de 8 lugares con traducciones y coordenadas verificadas.
-- [ ] Recopilar 30–50 lugares con fuente verificable.
-- [ ] Revisar coordenadas y categorías.
-- [ ] Crear descripciones originales en español.
-- [ ] Completar traducciones en inglés.
-- [ ] Comprimir y atribuir imágenes correctamente.
+- [x] Recopilar 30–50 lugares con fuente verificable.
+- [x] Revisar coordenadas y categorías.
+- [x] Crear descripciones originales en español.
+- [x] Completar traducciones en inglés.
+- [x] Comprimir y atribuir imágenes correctamente.
 - [ ] Ejecutar seed final.
 - [ ] Crear cuentas demo: usuario y administrador.
 - [ ] Preparar datos para mostrar recomendaciones y moderación.
