@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
-import { useState, type ReactNode } from 'react';
+import type { Href } from 'expo-router';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Linking, Platform, ScrollView, Share, Text, View } from 'react-native';
 
 import { AuthNotice } from '@/components/auth/auth-notice';
@@ -10,9 +11,25 @@ import { AppButton } from '@/components/ui/app-button';
 import { FeedbackState, LoadingState } from '@/components/ui/feedback-state';
 import { RatingDisplay } from '@/components/ui/rating-display';
 import { StatusCard } from '@/components/ui/status-card';
+import { AppInput } from '@/components/ui/app-input';
+import { FilterChip } from '@/components/ui/filter-chip';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { useAuth } from '@/providers/auth-provider';
 import { useLocale } from '@/providers/locale-provider';
 import { getPlaceDetail } from '@/services/catalog/place-service';
+import {
+  archiveReview,
+  createReport,
+  getFavoritePlaceIds,
+  getOwnReview,
+  getOwnTouristVote,
+  saveReview,
+  saveTouristVote,
+  setFavorite,
+} from '@/services/community/community-service';
 import { getPublishedReviews } from '@/services/reviews/review-service';
+import { uploadPendingPlaceImage } from '@/services/storage/image-service';
+import { pickCompressedImage } from '@/services/storage/media-picker';
 import { brandColors, colors, layout, spacing } from '@/theme';
 
 type PlaceDetailScreenProps = {
@@ -20,9 +37,27 @@ type PlaceDetailScreenProps = {
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const REPORT_REASONS = [
+  ['incorrect_information', 'Información incorrecta'],
+  ['duplicate', 'Duplicado'],
+  ['inappropriate', 'Inapropiado'],
+  ['spam', 'Spam'],
+  ['other', 'Otro'],
+] as const;
 
 export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
   const { locale } = useLocale();
+  const { user } = useAuth();
+  const guard = useAuthGuard();
+  const queryClient = useQueryClient();
+  const returnTo = (placeId ? `/place/${placeId}` : '/(tabs)') as Href;
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [photoAltText, setPhotoAltText] = useState('Foto compartida por un visitante');
+  const [reportDetails, setReportDetails] = useState('');
+  const [reportReason, setReportReason] = useState<
+    'incorrect_information' | 'duplicate' | 'inappropriate' | 'spam' | 'other'
+  >('incorrect_information');
   const [actionNotice, setActionNotice] = useState<{
     message: string;
     tone: 'error' | 'success';
@@ -37,6 +72,117 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
     enabled: hasValidId,
     queryFn: () => getPublishedReviews(placeId as string),
     queryKey: ['public', 'reviews', placeId],
+  });
+  const favoriteIdsQuery = useQuery({
+    enabled: Boolean(user?.id),
+    queryFn: () => getFavoritePlaceIds(user!.id),
+    queryKey: ['private', 'favorite-ids', user?.id],
+  });
+  const ownReviewQuery = useQuery({
+    enabled: Boolean(user?.id && hasValidId),
+    queryFn: () => getOwnReview(user!.id, placeId as string),
+    queryKey: ['private', 'own-review', user?.id, placeId],
+  });
+  const voteQuery = useQuery({
+    enabled: Boolean(user?.id && hasValidId),
+    queryFn: () => getOwnTouristVote(user!.id, placeId as string),
+    queryKey: ['private', 'tourist-vote', user?.id, placeId],
+  });
+
+  useEffect(() => {
+    if (ownReviewQuery.data) {
+      setReviewRating(ownReviewQuery.data.rating);
+      setReviewComment(ownReviewQuery.data.comment);
+    }
+  }, [ownReviewQuery.data]);
+
+  const refreshCommunityData = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['public', 'place-detail', locale, placeId] }),
+      queryClient.invalidateQueries({ queryKey: ['public', 'reviews', placeId] }),
+    ]);
+  };
+  const favoriteMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !placeId) throw new Error('Sesión requerida.');
+      const isFavorite = favoriteIdsQuery.data?.includes(placeId) ?? false;
+      await setFavorite(user.id, placeId, !isFavorite);
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['private', 'favorite-ids', user?.id] }),
+        queryClient.invalidateQueries({ queryKey: ['private', 'favorites', user?.id] }),
+        refreshCommunityData(),
+      ]);
+    },
+  });
+  const voteMutation = useMutation({
+    mutationFn: async (isTouristic: boolean) => {
+      if (!user || !placeId) throw new Error('Sesión requerida.');
+      await saveTouristVote(user.id, placeId, isTouristic);
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['private', 'tourist-vote', user?.id, placeId] }),
+        refreshCommunityData(),
+      ]);
+    },
+  });
+  const reviewMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !placeId) throw new Error('Sesión requerida.');
+      if (reviewComment.trim().length < 3)
+        throw new Error('Escribe un comentario de al menos 3 caracteres.');
+      return saveReview(user.id, placeId, { comment: reviewComment, rating: reviewRating });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['private', 'own-review', user?.id, placeId],
+      });
+      await refreshCommunityData();
+    },
+  });
+  const archiveReviewMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !placeId) throw new Error('Sesión requerida.');
+      await archiveReview(user.id, placeId);
+    },
+    onSuccess: async () => {
+      setReviewComment('');
+      await queryClient.invalidateQueries({
+        queryKey: ['private', 'own-review', user?.id, placeId],
+      });
+      await refreshCommunityData();
+    },
+  });
+  const photoMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !placeId) throw new Error('Sesión requerida.');
+      if (photoAltText.trim().length < 3) throw new Error('Describe brevemente la fotografía.');
+      const image = await pickCompressedImage();
+      if (!image) return null;
+      return uploadPendingPlaceImage({
+        ...image,
+        altText: photoAltText,
+        placeId,
+        reviewId: ownReviewQuery.data?.id,
+        userId: user.id,
+      });
+    },
+  });
+  const reportMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !placeId) throw new Error('Sesión requerida.');
+      if (reportDetails && reportDetails.trim().length < 3)
+        throw new Error('Explica el reporte con al menos 3 caracteres.');
+      await createReport(user.id, {
+        details: reportDetails,
+        reason: reportReason,
+        targetId: placeId,
+        targetType: 'place',
+      });
+    },
+    onSuccess: () => setReportDetails(''),
   });
 
   const openExternalUrl = async (url: string) => {
@@ -191,6 +337,111 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
         />
       </View>
 
+      <InformationSection title="Participa en MantaViews">
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          <View style={{ flexGrow: 1, minWidth: 180 }}>
+            <AppButton
+              label={
+                favoriteIdsQuery.data?.includes(place.id)
+                  ? 'Quitar de favoritos'
+                  : 'Guardar en favoritos'
+              }
+              loading={favoriteMutation.isPending}
+              onPress={() => guard(() => favoriteMutation.mutate(), returnTo)}
+              variant="secondary"
+            />
+          </View>
+          <FilterChip
+            color={brandColors.lime}
+            label="Sí es turístico"
+            onPress={() => guard(() => voteMutation.mutate(true), returnTo)}
+            selected={voteQuery.data === true}
+          />
+          <FilterChip
+            color={colors.error}
+            label="No es turístico"
+            onPress={() => guard(() => voteMutation.mutate(false), returnTo)}
+            selected={voteQuery.data === false}
+          />
+        </View>
+        {favoriteMutation.error || voteMutation.error ? (
+          <AuthNotice message="No pudimos guardar la acción. Inténtalo nuevamente." />
+        ) : null}
+      </InformationSection>
+
+      <InformationSection title="Tu reseña">
+        <Text style={{ color: colors.secondaryLabel, fontSize: 14 }}>
+          Selecciona una puntuación y comparte una opinión útil para otros turistas.
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          {[1, 2, 3, 4, 5].map((rating) => (
+            <FilterChip
+              color={brandColors.sun}
+              key={rating}
+              label={`${rating} ★`}
+              onPress={() => setReviewRating(rating)}
+              selected={reviewRating === rating}
+            />
+          ))}
+        </View>
+        <AppInput
+          label="Comentario"
+          maxLength={1000}
+          multiline
+          onChangeText={setReviewComment}
+          placeholder="¿Qué deberían saber otros visitantes?"
+          value={reviewComment}
+        />
+        {reviewMutation.isSuccess ? <AuthNotice message="Reseña guardada." tone="success" /> : null}
+        {reviewMutation.error ? (
+          <AuthNotice message={(reviewMutation.error as Error).message} />
+        ) : null}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          <View style={{ flexGrow: 1, minWidth: 170 }}>
+            <AppButton
+              label={ownReviewQuery.data ? 'Actualizar reseña' : 'Publicar reseña'}
+              loading={reviewMutation.isPending}
+              onPress={() => guard(() => reviewMutation.mutate(), returnTo)}
+            />
+          </View>
+          {ownReviewQuery.data?.status === 'published' ? (
+            <View style={{ flexGrow: 1, minWidth: 150 }}>
+              <AppButton
+                label="Archivar reseña"
+                loading={archiveReviewMutation.isPending}
+                onPress={() => archiveReviewMutation.mutate()}
+                variant="danger"
+              />
+            </View>
+          ) : null}
+        </View>
+      </InformationSection>
+
+      <InformationSection title="Compartir una fotografía">
+        <Text style={{ color: colors.secondaryLabel, fontSize: 14 }}>
+          La imagen se comprime antes de subirla y permanecerá pendiente hasta que un administrador
+          la apruebe.
+        </Text>
+        <AppInput
+          label="Descripción de la foto"
+          maxLength={180}
+          onChangeText={setPhotoAltText}
+          value={photoAltText}
+        />
+        {photoMutation.data ? (
+          <AuthNotice message="Foto enviada y pendiente de moderación." tone="success" />
+        ) : null}
+        {photoMutation.error ? (
+          <AuthNotice message={(photoMutation.error as Error).message} />
+        ) : null}
+        <AppButton
+          label="Seleccionar y enviar foto"
+          loading={photoMutation.isPending}
+          onPress={() => guard(() => photoMutation.mutate(), returnTo)}
+          variant="secondary"
+        />
+      </InformationSection>
+
       <InformationSection title="Acerca del lugar">
         <Text selectable style={{ color: colors.secondaryLabel, fontSize: 15, lineHeight: 24 }}>
           {place.description}
@@ -342,6 +593,39 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
             ))}
           </View>
         )}
+      </InformationSection>
+
+      <InformationSection title="Reportar información">
+        <Text style={{ color: colors.secondaryLabel, fontSize: 14 }}>
+          Los reportes son privados y serán revisados por un administrador.
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          {REPORT_REASONS.map(([reason, label]) => (
+            <FilterChip
+              key={reason}
+              label={label}
+              onPress={() => setReportReason(reason)}
+              selected={reportReason === reason}
+            />
+          ))}
+        </View>
+        <AppInput
+          label="Detalles (opcional)"
+          maxLength={500}
+          multiline
+          onChangeText={setReportDetails}
+          value={reportDetails}
+        />
+        {reportMutation.isSuccess ? <AuthNotice message="Reporte enviado." tone="success" /> : null}
+        {reportMutation.error ? (
+          <AuthNotice message={(reportMutation.error as Error).message} />
+        ) : null}
+        <AppButton
+          label="Enviar reporte"
+          loading={reportMutation.isPending}
+          onPress={() => guard(() => reportMutation.mutate(), returnTo)}
+          variant="secondary"
+        />
       </InformationSection>
     </PageContainer>
   );

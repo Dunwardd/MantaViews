@@ -161,6 +161,18 @@ export function ProfileScreen() {
         variant="secondary"
       />
 
+      <AppButton
+        label="Editar perfil e intereses"
+        onPress={() => router.push('/account-settings' as Href)}
+        variant="secondary"
+      />
+
+      <AppButton
+        label="Mis sugerencias de lugares"
+        onPress={() => router.push('/suggestions' as Href)}
+        variant="secondary"
+      />
+
       <AuthButton
         label="Cerrar sesión"
         loading={isSigningOut}

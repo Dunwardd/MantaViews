@@ -1432,9 +1432,11 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Función de rutas responde de forma controlada', () => pm.expect(pm.response.code).to.be.oneOf([200, 503]));",
+                  "pm.test('Función de rutas responde correctamente', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
-                  "pm.expect(body).to.have.any.keys('distanceMeters', 'error');"
+                  "pm.expect(body).to.include.keys('distanceMeters', 'durationSeconds', 'geometry');",
+                  "pm.expect(body.geometry.type).to.eql('LineString');",
+                  "pm.expect(body.geometry.coordinates.length).to.be.above(1);"
                 ]
               }
             }

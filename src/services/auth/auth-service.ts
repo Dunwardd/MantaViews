@@ -73,12 +73,13 @@ export async function createSessionFromUrl(url: string) {
   return data.session;
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(next = '/(tabs)/profile') {
   const supabase = getSupabaseClient();
+  const redirectTo = `${authRedirects.callback}?next=${encodeURIComponent(next)}`;
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: authRedirects.callback,
+      redirectTo,
       skipBrowserRedirect: process.env.EXPO_OS !== 'web',
     },
   });
@@ -87,7 +88,7 @@ export async function signInWithGoogle() {
   if (process.env.EXPO_OS === 'web') return null;
   if (!data.url) throw new Error('No se recibió la URL de Google OAuth.');
 
-  const result = await WebBrowser.openAuthSessionAsync(data.url, authRedirects.callback);
+  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
   if (result.type === 'cancel' || result.type === 'dismiss') throw new Error('OAUTH_CANCELLED');
   if (result.type !== 'success') return null;
 

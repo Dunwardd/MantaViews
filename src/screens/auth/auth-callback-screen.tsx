@@ -1,5 +1,6 @@
 import * as Linking from 'expo-linking';
-import { router } from 'expo-router';
+import type { Href } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 import { AuthButton } from '@/components/auth/auth-button';
@@ -9,6 +10,8 @@ import { getAuthErrorMessage } from '@/services/auth/auth-errors';
 import { createSessionFromUrl } from '@/services/auth/auth-service';
 
 export function AuthCallbackScreen() {
+  const { next } = useLocalSearchParams<{ next?: string }>();
+  const destination = typeof next === 'string' && next.startsWith('/') ? next : '/(tabs)/profile';
   const incomingUrl = Linking.useURL();
   const [error, setError] = useState<string>();
 
@@ -16,9 +19,9 @@ export function AuthCallbackScreen() {
     if (!incomingUrl) return;
 
     void createSessionFromUrl(incomingUrl)
-      .then(() => router.replace('/(tabs)/profile'))
+      .then(() => router.replace(destination as Href))
       .catch((caughtError: unknown) => setError(getAuthErrorMessage(caughtError)));
-  }, [incomingUrl]);
+  }, [destination, incomingUrl]);
 
   return (
     <AuthScreenLayout

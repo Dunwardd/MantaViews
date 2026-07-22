@@ -48,7 +48,7 @@ export function SignInScreen() {
     setError(undefined);
     setIsGoogleLoading(true);
     try {
-      const session = await signInWithGoogle();
+      const session = await signInWithGoogle(destination);
       if (session || process.env.EXPO_OS !== 'web') router.replace(destination as Href);
     } catch (caughtError) {
       setError(getAuthErrorMessage(caughtError));

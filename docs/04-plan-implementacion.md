@@ -134,8 +134,8 @@ Criterio de aceptación: email/password completo y sesión persistente; Google p
 - [x] Verificar CRUD de reseñas, favoritos y votos.
 - [x] Verificar sugerencias, imágenes y reportes.
 - [x] Implementar y desplegar Edge Function `route-preview`.
-- [ ] Guardar la clave del proveedor de rutas como secreto server-side.
-- [ ] Verificar una ruta real con OpenRouteService después de configurar el secreto.
+- [x] Configurar Valhalla sobre OpenStreetMap como proveedor sin clave API.
+- [x] Verificar una ruta real con Valhalla después del despliegue.
 - [x] Normalizar errores del proveedor externo.
 - [x] Implementar timeout y límites de solicitudes para rutas.
 - [x] Implementar Edge Function `admin-places`.
@@ -193,50 +193,51 @@ Criterio de aceptación: un invitado puede descubrir un lugar desde inicio o bú
 
 ## 11. Fase 8 — Mapa, ubicación y rutas
 
-- [ ] Instalar y configurar `react-native-maps`.
-- [ ] Crear implementación web equivalente o placeholder controlado.
-- [ ] Mostrar región inicial de Manta.
-- [ ] Renderizar marcadores por categoría.
-- [ ] Mostrar tarjeta al seleccionar un marcador.
-- [ ] Solicitar ubicación solo al usar funciones cercanas.
-- [ ] Gestionar permiso concedido, rechazado y bloqueado.
-- [ ] Consultar lugares cercanos con PostGIS.
-- [ ] Llamar `route-preview`.
-- [ ] Dibujar polilínea, distancia y duración.
-- [ ] Añadir botón para abrir Google Maps/Waze.
-- [ ] Confirmar mediante logs y revisión que la ubicación no se persiste.
+- [x] Instalar y configurar `react-native-maps`.
+- [x] Crear mapa web real con Leaflet y OpenStreetMap.
+- [x] Mostrar región inicial de Manta.
+- [x] Renderizar marcadores por categoría.
+- [x] Mostrar tarjeta al seleccionar un marcador.
+- [x] Solicitar ubicación solo al usar funciones cercanas.
+- [x] Gestionar permiso concedido, rechazado y bloqueado.
+- [x] Consultar lugares cercanos con PostGIS.
+- [x] Llamar `route-preview`.
+- [x] Dibujar polilínea, distancia y duración.
+- [x] Añadir botón para abrir Google Maps/Waze.
+- [x] Confirmar mediante logs y revisión que la ubicación no se persiste.
+- [x] Verificar en la app una ruta real servida por Valhalla.
 
 Criterio de aceptación: el usuario ve lugares y una ruta; la app sigue funcionando sin conceder ubicación.
 
 ## 12. Fase 9 — Funciones de usuario
 
-- [ ] Implementar perfil y edición de idioma/nombre/avatar.
-- [ ] Implementar selección de intereses.
-- [ ] Implementar agregar/quitar favoritos.
-- [ ] Implementar listado de favoritos.
-- [ ] Implementar crear/editar/archivar reseña.
-- [ ] Impedir doble envío de formularios.
-- [ ] Implementar voto turístico mediante upsert.
-- [ ] Implementar sugerencia de nuevo lugar.
-- [ ] Mostrar estado de sugerencias propias.
-- [ ] Implementar reportes.
-- [ ] Implementar selección, compresión y subida de imágenes.
-- [ ] Mostrar estado pendiente de moderación.
-- [ ] Reanudar acción después del login contextual.
+- [x] Implementar perfil y edición de idioma/nombre/avatar.
+- [x] Implementar selección de intereses.
+- [x] Implementar agregar/quitar favoritos.
+- [x] Implementar listado de favoritos.
+- [x] Implementar crear/editar/archivar reseña.
+- [x] Impedir doble envío de formularios.
+- [x] Implementar voto turístico mediante upsert.
+- [x] Implementar sugerencia de nuevo lugar.
+- [x] Mostrar estado de sugerencias propias.
+- [x] Implementar reportes.
+- [x] Implementar selección, compresión y subida de imágenes.
+- [x] Mostrar estado pendiente de moderación.
+- [x] Reanudar acción después del login contextual.
 
 Criterio de aceptación: todas las escrituras requieren sesión, actualizan caché correctamente y respetan propiedad/RLS.
 
 ## 13. Fase 10 — Recomendaciones
 
-- [ ] Definir pesos finales del algoritmo y documentarlos.
-- [ ] Implementar fallback popular/diverso para invitados.
-- [ ] Integrar intereses del usuario.
-- [ ] Integrar valoración y popularidad.
-- [ ] Integrar distancia solo cuando se otorgue permiso.
-- [ ] Excluir lugares archivados o rechazados.
-- [ ] Evitar resultados repetitivos de una sola categoría.
-- [ ] Explicar brevemente “Por qué se recomienda”.
-- [ ] Probar usuario nuevo, usuario sin intereses y usuario activo.
+- [x] Definir pesos finales del algoritmo y documentarlos.
+- [x] Implementar fallback popular/diverso para invitados.
+- [x] Integrar intereses del usuario.
+- [x] Integrar valoración y popularidad.
+- [x] Integrar distancia solo cuando se otorgue permiso.
+- [x] Excluir lugares archivados o rechazados.
+- [x] Evitar resultados repetitivos de una sola categoría.
+- [x] Explicar brevemente “Por qué se recomienda”.
+- [x] Probar usuario nuevo, usuario sin intereses y usuario activo.
 
 Criterio de aceptación: la misma entrada produce resultados explicables y nunca requiere un servicio de IA pagado.
 

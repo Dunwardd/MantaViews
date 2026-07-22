@@ -458,9 +458,7 @@ Respuesta normalizada:
 }
 ```
 
-La Edge Function protege la clave externa, admite `foot-walking`, `driving-car` y `cycling-regular`, valida que ambas coordenadas estén dentro del área de Manta y no registra el body. También aplica un timeout de 8 segundos, límite de 30 solicitudes por minuto y errores JSON normalizados.
-
-Mientras `OPENROUTESERVICE_API_KEY` no esté configurado como secreto de Supabase, este endpoint devuelve `503 ROUTING_PROVIDER_NOT_CONFIGURED`. Esa respuesta controlada está cubierta por Postman, pero la ruta real permanece pendiente.
+La Edge Function usa el servidor público de Valhalla sobre datos de OpenStreetMap y normaliza su respuesta al contrato anterior. Admite `foot-walking`, `driving-car` y `cycling-regular`, valida que ambas coordenadas estén dentro del área de Manta y no registra el body. También envía `X-Client-Id: MantaViews-academic`, aplica un timeout de 10 segundos, límite de 30 solicitudes por minuto y errores JSON normalizados. No requiere ni expone una clave API.
 
 ## 11. Administración
 

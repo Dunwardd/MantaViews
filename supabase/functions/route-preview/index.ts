@@ -10,7 +10,14 @@ import {
 import { enforceRateLimit } from '../_shared/rate-limit.ts';
 import { requirePublishableKey } from '../_shared/supabase.ts';
 
-const ROUTING_API_URL = 'https://api.openrouteservice.org/v2/directions';
+const ROUTING_API_URL = 'https://valhalla1.openstreetmap.de/route';
+const ROUTING_CLIENT_ID = 'MantaViews-academic';
+
+const valhallaCostingByProfile = {
+  'cycling-regular': 'bicycle',
+  'driving-car': 'auto',
+  'foot-walking': 'pedestrian',
+} as const;
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return optionsResponse();
@@ -20,31 +27,26 @@ Deno.serve(async (request) => {
     requirePublishableKey(request);
     enforceRateLimit(request);
     const input = await parseJson(request, routePreviewSchema);
-    const apiKey = Deno.env.get('OPENROUTESERVICE_API_KEY');
-    if (!apiKey) {
-      throw new ApiError(
-        503,
-        'ROUTING_NOT_CONFIGURED',
-        'El proveedor de rutas todavía no está configurado.',
-      );
-    }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8_000);
+    const timeout = setTimeout(() => controller.abort(), 10_000);
     let response: Response;
 
     try {
-      response = await fetch(`${ROUTING_API_URL}/${input.profile}/geojson`, {
+      response = await fetch(ROUTING_API_URL, {
         body: JSON.stringify({
-          coordinates: [
-            [input.origin.longitude, input.origin.latitude],
-            [input.destination.longitude, input.destination.latitude],
+          costing: valhallaCostingByProfile[input.profile],
+          locations: [
+            { lat: input.origin.latitude, lon: input.origin.longitude },
+            { lat: input.destination.latitude, lon: input.destination.longitude },
           ],
+          shape_format: 'polyline6',
+          units: 'kilometers',
         }),
         headers: {
           Accept: 'application/json',
-          Authorization: apiKey,
           'Content-Type': 'application/json',
+          'X-Client-Id': ROUTING_CLIENT_ID,
         },
         method: 'POST',
         signal: controller.signal,
@@ -62,18 +64,35 @@ Deno.serve(async (request) => {
       throw new ApiError(429, 'ROUTING_RATE_LIMITED', 'El proveedor de rutas alcanzó su límite.');
     }
     if (!response.ok) {
+      const providerMessage = (await response.text()).slice(0, 1_000);
+      console.error(
+        JSON.stringify({
+          event: 'routing_provider_error',
+          providerMessage,
+          providerStatus: response.status,
+        }),
+      );
       throw new ApiError(502, 'ROUTING_PROVIDER_ERROR', 'El proveedor no pudo calcular la ruta.');
     }
 
     const payload = (await response.json()) as {
-      features?: {
-        geometry?: unknown;
-        properties?: { summary?: { distance?: number; duration?: number } };
-      }[];
+      trip?: {
+        legs?: { shape?: unknown }[];
+        status?: unknown;
+        summary?: { length?: unknown; time?: unknown };
+        units?: unknown;
+      };
     };
-    const feature = payload.features?.[0];
-    const summary = feature?.properties?.summary;
-    if (!feature?.geometry || summary?.distance === undefined || summary.duration === undefined) {
+    const legs = payload.trip?.legs;
+    const summary = payload.trip?.summary;
+    if (
+      payload.trip?.status !== 0 ||
+      payload.trip.units !== 'kilometers' ||
+      !Array.isArray(legs) ||
+      legs.length === 0 ||
+      typeof summary?.length !== 'number' ||
+      typeof summary.time !== 'number'
+    ) {
       throw new ApiError(
         502,
         'INVALID_PROVIDER_RESPONSE',
@@ -81,12 +100,89 @@ Deno.serve(async (request) => {
       );
     }
 
+    const coordinates = legs.flatMap((leg, legIndex) => {
+      if (typeof leg.shape !== 'string') {
+        throw new ApiError(
+          502,
+          'INVALID_PROVIDER_RESPONSE',
+          'El proveedor devolvió una geometría incompleta.',
+        );
+      }
+
+      const decoded = decodePolyline6(leg.shape);
+      return legIndex === 0 ? decoded : decoded.slice(1);
+    });
+
+    if (coordinates.length < 2) {
+      throw new ApiError(
+        502,
+        'INVALID_PROVIDER_RESPONSE',
+        'El proveedor devolvió una ruta sin suficientes puntos.',
+      );
+    }
+
     return jsonResponse({
-      distanceMeters: Math.round(summary.distance),
-      durationSeconds: Math.round(summary.duration),
-      geometry: feature.geometry,
+      distanceMeters: Math.round(summary.length * 1_000),
+      durationSeconds: Math.round(summary.time),
+      geometry: { coordinates, type: 'LineString' },
     });
   } catch (error) {
     return errorResponse(error);
   }
 });
+
+function decodePolyline6(encoded: string) {
+  const coordinates: [number, number][] = [];
+  let index = 0;
+  let latitude = 0;
+  let longitude = 0;
+
+  while (index < encoded.length) {
+    const latitudeResult = decodePolylineComponent(encoded, index);
+    latitude += latitudeResult.delta;
+    index = latitudeResult.nextIndex;
+
+    const longitudeResult = decodePolylineComponent(encoded, index);
+    longitude += longitudeResult.delta;
+    index = longitudeResult.nextIndex;
+
+    coordinates.push([longitude / 1_000_000, latitude / 1_000_000]);
+  }
+
+  return coordinates;
+}
+
+function decodePolylineComponent(encoded: string, startIndex: number) {
+  let byte = 0;
+  let index = startIndex;
+  let result = 0;
+  let shift = 0;
+
+  do {
+    if (index >= encoded.length || shift > 30) {
+      throw new ApiError(
+        502,
+        'INVALID_PROVIDER_RESPONSE',
+        'El proveedor devolvió una geometría inválida.',
+      );
+    }
+
+    byte = encoded.charCodeAt(index) - 63;
+    if (byte < 0) {
+      throw new ApiError(
+        502,
+        'INVALID_PROVIDER_RESPONSE',
+        'El proveedor devolvió una geometría inválida.',
+      );
+    }
+
+    index += 1;
+    result |= (byte & 0x1f) << shift;
+    shift += 5;
+  } while (byte >= 0x20);
+
+  return {
+    delta: result & 1 ? ~(result >> 1) : result >> 1,
+    nextIndex: index,
+  };
+}

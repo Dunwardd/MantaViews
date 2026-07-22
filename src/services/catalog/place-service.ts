@@ -76,6 +76,26 @@ export type TourismRecommendation = TourismPlace & {
   score: number;
 };
 
+type NearbyPlaceRow = {
+  address: string;
+  average_rating: number | string;
+  category_id: number;
+  category_slug: string;
+  cover_image_path: string | null;
+  distance_meters: number | string;
+  latitude: number | string;
+  longitude: number | string;
+  name: string;
+  place_id: string;
+  short_description: string;
+};
+
+export type NearbyTourismPlace = TourismPlace & {
+  distanceMeters: number;
+  latitude: number;
+  longitude: number;
+};
+
 export type PlaceDetail = {
   address: string;
   category: {
@@ -220,13 +240,14 @@ export async function getPlaceDetail(placeId: string, locale: CatalogLocale = 'e
 export async function getTourismRecommendations(
   locale: CatalogLocale = 'es',
   limit = 4,
+  location?: { latitude: number; longitude: number } | null,
 ): Promise<TourismRecommendation[]> {
   const safeLimit = Math.min(Math.max(Math.trunc(limit), 1), 12);
   const { data, error } = await getSupabaseClient().rpc('get_recommendations', {
-    p_latitude: null,
+    p_latitude: location?.latitude ?? null,
     p_limit: safeLimit,
     p_locale: locale,
-    p_longitude: null,
+    p_longitude: location?.longitude ?? null,
   });
 
   if (error) throw error;
@@ -251,6 +272,57 @@ export async function getTourismRecommendations(
     name: place.name,
     recommendationReason: place.recommendation_reason,
     score: Number(place.score ?? 0),
+    shortDescription: place.short_description,
+  }));
+}
+
+export async function getNearbyTourismPlaces({
+  categoryId = null,
+  latitude,
+  limit = 20,
+  locale = 'es',
+  longitude,
+  radiusMeters = 15_000,
+}: {
+  categoryId?: number | null;
+  latitude: number;
+  limit?: number;
+  locale?: CatalogLocale;
+  longitude: number;
+  radiusMeters?: number;
+}): Promise<NearbyTourismPlace[]> {
+  const safeLimit = Math.min(Math.max(Math.trunc(limit), 1), 50);
+  const safeRadius = Math.min(Math.max(Math.trunc(radiusMeters), 100), 50_000);
+  const { data, error } = await getSupabaseClient().rpc('nearby_places', {
+    p_category_id: categoryId,
+    p_latitude: latitude,
+    p_limit: safeLimit,
+    p_locale: locale,
+    p_longitude: longitude,
+    p_radius_meters: safeRadius,
+  });
+
+  if (error) throw error;
+
+  const rows = data as NearbyPlaceRow[];
+  const signedUrls = await getSignedPlaceImageUrls(
+    rows.flatMap((place) => (place.cover_image_path ? [place.cover_image_path] : [])),
+  );
+
+  return rows.map<NearbyTourismPlace>((place) => ({
+    address: place.address,
+    averageRating: Number(place.average_rating ?? 0),
+    categoryColor: '#2FA7B0',
+    categoryId: place.category_id,
+    categorySlug: place.category_slug,
+    coverImagePath: place.cover_image_path,
+    coverImageUrl: place.cover_image_path ? (signedUrls.get(place.cover_image_path) ?? null) : null,
+    distanceMeters: Number(place.distance_meters),
+    id: place.place_id,
+    isFeatured: false,
+    latitude: Number(place.latitude),
+    longitude: Number(place.longitude),
+    name: place.name,
     shortDescription: place.short_description,
   }));
 }

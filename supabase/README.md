@@ -63,13 +63,7 @@ Las funciones usan el import map versionado en `functions/deno.json`. Para despl
 npx supabase functions deploy route-preview admin-places admin-suggestions review-suggestion moderate-content admin-reports resolve-report --project-ref TU_PROJECT_REF --use-api --import-map supabase/functions/deno.json
 ```
 
-La vista previa de ruta requiere una clave gratuita de OpenRouteService guardada únicamente en Supabase:
-
-```bash
-npx supabase secrets set OPENROUTESERVICE_API_KEY=TU_CLAVE --project-ref TU_PROJECT_REF
-```
-
-No se añade esa clave a `.env`, Postman ni al bundle de Expo.
+La vista previa de ruta usa el servidor público de Valhalla sobre datos de OpenStreetMap. No requiere clave API y se identifica mediante el encabezado `X-Client-Id: MantaViews-academic`. Su uso está limitado a pruebas académicas y tráfico bajo; una publicación con usuarios reales debe usar una instancia propia o coordinar el acceso con Valhalla.
 
 ## Primer administrador
 

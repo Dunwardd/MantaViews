@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useQuery, type InfiniteData } from '@tanstack/react-query';
 import { Image } from 'expo-image';
+import * as Location from 'expo-location';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
@@ -9,6 +10,7 @@ import { AppButton } from '@/components/ui/app-button';
 import { FeedbackState, LoadingState } from '@/components/ui/feedback-state';
 import { FilterChip } from '@/components/ui/filter-chip';
 import { StatusCard } from '@/components/ui/status-card';
+import { useAuth } from '@/providers/auth-provider';
 import { useLocale } from '@/providers/locale-provider';
 import { getTourismCategories } from '@/services/catalog/category-service';
 import {
@@ -36,11 +38,18 @@ const ratingOptions = [
 
 export function ExploreScreen() {
   const { locale } = useLocale();
+  const { user } = useAuth();
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [maximumDistance, setMaximumDistance] = useState<number | null>(null);
   const [minimumRating, setMinimumRating] = useState(0);
+  const [recommendationLocation, setRecommendationLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [isLocatingRecommendations, setIsLocatingRecommendations] = useState(false);
+  const [locationNotice, setLocationNotice] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchText.trim()), 300);
@@ -53,9 +62,51 @@ export function ExploreScreen() {
   });
 
   const recommendationsQuery = useQuery({
-    queryFn: () => getTourismRecommendations(locale, 4),
-    queryKey: ['public', 'recommendations', locale, 4],
+    queryFn: () => getTourismRecommendations(locale, 4, recommendationLocation),
+    queryKey: [
+      'public',
+      'recommendations',
+      locale,
+      user?.id ?? 'guest',
+      recommendationLocation?.latitude,
+      recommendationLocation?.longitude,
+      4,
+    ],
   });
+
+  const improveRecommendationsWithLocation = async () => {
+    if (isLocatingRecommendations) return;
+    setIsLocatingRecommendations(true);
+    setLocationNotice(null);
+    try {
+      let permission = await Location.getForegroundPermissionsAsync();
+      if (!permission.granted && permission.canAskAgain) {
+        permission = await Location.requestForegroundPermissionsAsync();
+      }
+      if (!permission.granted) {
+        setLocationNotice(
+          'Puedes continuar sin ubicación; las recomendaciones seguirán funcionando.',
+        );
+        return;
+      }
+      const lastKnown = await Location.getLastKnownPositionAsync({
+        maxAge: 120_000,
+        requiredAccuracy: 1_000,
+      });
+      const current =
+        lastKnown ??
+        (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+      setRecommendationLocation({
+        latitude: current.coords.latitude,
+        longitude: current.coords.longitude,
+      });
+      setLocationNotice('Cercanía incorporada sin almacenar tu ubicación.');
+    } catch {
+      setLocationNotice('No pudimos consultar la ubicación; usamos popularidad e intereses.');
+    } finally {
+      setIsLocatingRecommendations(false);
+    }
+  };
 
   const placesQuery = useInfiniteQuery<
     TourismPlace[],
@@ -288,9 +339,24 @@ export function ExploreScreen() {
 
       <View style={{ gap: spacing.md }}>
         <SectionHeading
-          description="Sugerencias generadas por el motor de recomendaciones de MantaViews"
+          description={
+            user
+              ? 'Combina tus intereses, valoraciones, popularidad y diversidad de categorías.'
+              : 'Selección popular y variada para explorar Manta sin crear una cuenta.'
+          }
           title="Recomendados para ti"
         />
+        <AppButton
+          label={recommendationLocation ? 'Actualizar mi ubicación' : 'Mejorar con mi ubicación'}
+          loading={isLocatingRecommendations}
+          onPress={() => void improveRecommendationsWithLocation()}
+          variant="secondary"
+        />
+        {locationNotice ? (
+          <Text selectable style={{ color: colors.secondaryLabel, fontSize: 13 }}>
+            {locationNotice}
+          </Text>
+        ) : null}
         {recommendationsQuery.isPending ? (
           <LoadingState label="Preparando recomendaciones…" />
         ) : recommendationsQuery.isError ? (

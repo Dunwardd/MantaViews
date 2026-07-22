@@ -37,7 +37,19 @@
       ],
       "expo-secure-store",
       "expo-web-browser",
-      "expo-sqlite"
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "MantaViews necesita acceso a tus fotos para subir avatares y fotografías turísticas que serán moderadas."
+        }
+      ],
+      "expo-sqlite",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "MantaViews usa tu ubicación mientras exploras para mostrar lugares cercanos y calcular rutas. No almacenamos tu ubicación."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -24,7 +24,7 @@ Los scripts guardan automáticamente tokens, identificadores y registros tempora
 
 La colección contiene 49 solicitudes. El 21 de julio de 2026 se ejecutaron 53 aserciones contra el proyecto cloud, todas sin fallos. Los usuarios y registros desechables usados en esa verificación fueron eliminados después de la prueba.
 
-`ROUTE-01` acepta temporalmente `503` si falta `OPENROUTESERVICE_API_KEY`; después de configurar el secreto debe responder `200` y conviene repetir esa solicitud antes de una demostración.
+`ROUTE-01` debe responder `200` mediante Valhalla y no necesita una clave externa. Conviene repetir esa solicitud antes de una demostración porque el proveedor público aplica límites de uso razonable.
 
 ## Catálogo actual
 
