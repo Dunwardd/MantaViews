@@ -43,6 +43,7 @@ function RootNavigation() {
         <Stack.Screen name="place/[id]" options={{ title: 'Detalle del lugar' }} />
         <Stack.Screen name="account-settings" options={{ title: 'Editar cuenta' }} />
         <Stack.Screen name="suggestions" options={{ title: 'Sugerencias' }} />
+        <Stack.Screen name="admin" options={{ headerShown: false }} />
         <Stack.Screen
           name="preferences"
           options={{

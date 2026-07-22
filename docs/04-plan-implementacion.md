@@ -243,18 +243,18 @@ Criterio de aceptación: la misma entrada produce resultados explicables y nunca
 
 ## 14. Fase 11 — Panel administrativo web
 
-- [ ] Crear layout web protegido para admin.
-- [ ] Implementar resumen de pendientes.
-- [ ] Implementar listado, búsqueda y filtros de lugares.
-- [ ] Implementar formulario bilingüe de lugar.
-- [ ] Implementar selección de coordenadas en mapa.
-- [ ] Implementar publicar y archivar.
-- [ ] Implementar revisión de sugerencias.
-- [ ] Implementar moderación de reseñas e imágenes.
-- [ ] Implementar gestión de reportes.
-- [ ] Mostrar confirmación antes de acciones destructivas lógicas.
-- [ ] Verificar que cada acción genere auditoría.
-- [ ] Verificar acceso denegado con cuenta normal.
+- [x] Crear layout web protegido para admin.
+- [x] Implementar resumen de pendientes.
+- [x] Implementar listado, búsqueda y filtros de lugares.
+- [x] Implementar formulario bilingüe de lugar.
+- [x] Implementar selección de coordenadas en mapa.
+- [x] Implementar publicar y archivar.
+- [x] Implementar revisión de sugerencias.
+- [x] Implementar moderación de reseñas e imágenes.
+- [x] Implementar gestión de reportes.
+- [x] Mostrar confirmación antes de acciones destructivas lógicas.
+- [x] Verificar que cada acción genere auditoría.
+- [x] Verificar acceso denegado con cuenta normal.
 
 Criterio de aceptación: un administrador gestiona el catálogo sin usar el Dashboard de Supabase y un usuario normal no puede acceder ni ejecutar acciones.
 

@@ -137,9 +137,18 @@ export function ProfileScreen() {
           {user.email}
         </Text>
         {adminQuery.data ? (
-          <Text selectable style={{ color: brandColors.primary, fontSize: 13, fontWeight: '800' }}>
-            Administrador de MantaViews
-          </Text>
+          <>
+            <Text
+              selectable
+              style={{ color: brandColors.primary, fontSize: 13, fontWeight: '800' }}
+            >
+              Administrador de MantaViews
+            </Text>
+            <AppButton
+              label="Abrir panel administrativo"
+              onPress={() => router.push('/admin' as Href)}
+            />
+          </>
         ) : null}
       </SurfaceCard>
 
