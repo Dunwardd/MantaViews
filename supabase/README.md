@@ -33,6 +33,10 @@ npm run supabase:stop
 - `migrations/20260721000100_phase2_schema.sql`: extensiones, enums, tablas, restricciones, índices y triggers.
 - `migrations/20260721000200_phase2_read_models.sql`: vista agregada y RPC de lectura.
 - `migrations/20260721000300_phase3_security_storage.sql`: privilegios mínimos, RLS, proyecciones seguras y políticas de Storage.
+- `migrations/20260722024900_fix_suggestion_review_state.sql`: conserva un estado de revisión válido aunque se elimine la cuenta del administrador.
+- `migrations/20260722025412_harden_rls_trigger_and_avatar_bucket.sql`: restringe la función interna de RLS y evita enumerar avatares.
+- `migrations/20260722025616_add_foreign_key_indexes.sql`: cubre las claves foráneas usadas por joins, borrados y políticas.
+- `functions/`: validaciones Zod compartidas y las siete Edge Functions de rutas y administración.
 - `seed.sql`: nueve categorías turísticas con traducciones `es` y `en`.
 - `tests/database/phase2.sql`: pruebas pgTAP de estructura, seed y distancia geográfica.
 - `tests/database/phase3.sql`: pruebas pgTAP de aislamiento para invitado, usuarios y administrador.
@@ -50,6 +54,22 @@ npx supabase db push --include-seed
 ```
 
 No se debe versionar la contraseña de la base, la `service_role key` ni ningún token de acceso.
+
+## Edge Functions
+
+Las funciones usan el import map versionado en `functions/deno.json`. Para desplegarlas:
+
+```bash
+npx supabase functions deploy route-preview admin-places admin-suggestions review-suggestion moderate-content admin-reports resolve-report --project-ref TU_PROJECT_REF --use-api --import-map supabase/functions/deno.json
+```
+
+La vista previa de ruta requiere una clave gratuita de OpenRouteService guardada únicamente en Supabase:
+
+```bash
+npx supabase secrets set OPENROUTESERVICE_API_KEY=TU_CLAVE --project-ref TU_PROJECT_REF
+```
+
+No se añade esa clave a `.env`, Postman ni al bundle de Expo.
 
 ## Primer administrador
 

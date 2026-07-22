@@ -4,9 +4,9 @@
 
 - Email y contraseña: habilitado en Supabase Cloud.
 - Registro de usuarios: habilitado.
-- Confirmación de correo: obligatoria.
+- Confirmación de correo: desactivada para el MVP académico.
 - Sesión móvil: persistida con Expo SecureStore.
-- Google: implementado en la app, pendiente de habilitar en Google Cloud y Supabase.
+- Google: implementado y habilitado en Google Cloud y Supabase.
 
 La aplicación usa únicamente la URL del proyecto y la `publishable key`. Ningún secreto de Google ni una `service_role` se guarda en Expo.
 
@@ -46,11 +46,12 @@ La IP puede cambiar. Para una demo estable de Google y recuperación se recomien
 
 1. Abrir **Perfil → Crear cuenta**.
 2. Registrar nombre, correo y una contraseña de al menos ocho caracteres con letra y número.
-3. Confirmar el correo desde el enlace recibido.
-4. Iniciar sesión y comprobar que Perfil muestra el nombre y correo.
+3. Comprobar que la aplicación inicia sesión inmediatamente, sin enviar un correo de confirmación.
+4. Confirmar que Perfil muestra el nombre y correo.
 5. Cerrar y volver a abrir la app: la sesión debe restaurarse.
 6. Cerrar sesión: Perfil debe volver al modo invitado.
-7. Usar **¿Olvidaste tu contraseña?**, abrir el enlace y guardar una contraseña nueva.
+
+> La recuperación de contraseña todavía depende de un proveedor SMTP con buena entregabilidad. No forma parte del flujo crítico de la demo mientras no exista un dominio autenticado.
 
 ## Prueba del retorno contextual
 

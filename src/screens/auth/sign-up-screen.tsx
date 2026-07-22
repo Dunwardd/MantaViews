@@ -25,7 +25,6 @@ export function SignUpScreen() {
   const [confirmation, setConfirmation] = useState('');
   const [acceptsPrivacy, setAcceptsPrivacy] = useState(false);
   const [error, setError] = useState<string>();
-  const [success, setSuccess] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSignUp = async () => {
@@ -42,15 +41,14 @@ export function SignUpScreen() {
     }
 
     setError(undefined);
-    setSuccess(undefined);
     setIsSubmitting(true);
     try {
       const data = await signUpWithPassword(displayName, email, password);
       if (data.session) {
         router.replace(destination as Href);
       } else {
-        setSuccess(
-          'Cuenta creada. Revisa tu correo y toca el enlace de confirmación para activarla.',
+        setError(
+          'La cuenta fue creada, pero Supabase aún exige confirmar el correo. Desactiva Confirm email en Authentication → Sign In / Providers → Email.',
         );
       }
     } catch (caughtError) {
@@ -86,7 +84,6 @@ export function SignUpScreen() {
       }
     >
       {error ? <AuthNotice message={error} /> : null}
-      {success ? <AuthNotice message={success} tone="success" /> : null}
       <AuthField
         autoCapitalize="words"
         autoComplete="name"

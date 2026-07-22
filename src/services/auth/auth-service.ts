@@ -27,7 +27,6 @@ export async function signUpWithPassword(displayName: string, email: string, pas
     password,
     options: {
       data: { display_name: displayName.trim() },
-      emailRedirectTo: authRedirects.callback,
     },
   });
 

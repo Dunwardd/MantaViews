@@ -33,8 +33,8 @@ select results_eq(
 
 select results_eq(
   $$ select count(*)::bigint from pg_policies where schemaname = 'storage' and policyname like '%mantaviews%' or schemaname = 'storage' and policyname like 'avatars_%' or schemaname = 'storage' and policyname like 'place_images_storage_%' $$,
-  array[10::bigint],
-  'all MantaViews Storage policies exist'
+  array[9::bigint],
+  'all restricted MantaViews Storage policies exist without public avatar listing'
 );
 
 select results_eq(

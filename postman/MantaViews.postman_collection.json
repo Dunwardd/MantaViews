@@ -1,0 +1,1919 @@
+{
+  "info": {
+    "_postman_id": "d8a573af-72dc-4e9f-b4d9-2c57656cda31",
+    "name": "MantaViews API",
+    "description": "Pruebas del backend Supabase de MantaViews. Usa únicamente la publishable key y JWT de usuarios; nunca service_role.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Auth",
+      "item": [
+        {
+          "name": "AUTH-01 Registrar usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\",\n  \"data\": {\n    \"display_name\": \"Turista de prueba\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/auth/v1/signup"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Registro exitoso', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const body = pm.response.json();",
+                  "pm.test('Se creó el usuario', () => pm.expect(body.user).to.exist);",
+                  "pm.test('Confirm email está desactivado', () => pm.expect(body.access_token, 'El registro debe devolver sesión inmediata').to.be.a('string').and.not.empty);",
+                  "if (body.access_token) pm.environment.set('access_token', body.access_token);",
+                  "if (body.refresh_token) pm.environment.set('refresh_token', body.refresh_token);",
+                  "if (body.user?.id) pm.environment.set('user_id', body.user.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "AUTH-02 Iniciar sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/auth/v1/token?grant_type=password"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+                  "pm.environment.set('access_token', body.access_token);",
+                  "pm.environment.set('refresh_token', body.refresh_token);",
+                  "pm.environment.set('user_id', body.user.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "AUTH-03 Refrescar sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/auth/v1/token?grant_type=refresh_token"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Refresh 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (body.access_token) pm.environment.set('access_token', body.access_token);",
+                  "if (body.refresh_token) pm.environment.set('refresh_token', body.refresh_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "AUTH-04 Cerrar sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/auth/v1/logout"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Logout exitoso', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));",
+                  "pm.environment.unset('access_token');",
+                  "pm.environment.unset('refresh_token');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - API pública",
+      "item": [
+        {
+          "name": "CAT-01 Categorías activas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/rest/v1/categories?is_active=eq.true&select=id,slug,icon,color,sort_order,category_translations(locale,name)&order=sort_order.asc"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Categorías 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Hay nueve categorías del seed', () => pm.expect(body).to.be.an('array').with.lengthOf(9));",
+                  "if (body[0]?.id) pm.environment.set('category_id', body[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PLACE-01 Lugares publicados",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/rest/v1/places?status=eq.published&select=id,category_id,address,is_featured,place_translations(locale,name,short_description)&order=is_featured.desc&limit=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lugares 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body).to.be.an('array');",
+                  "if (body[0]?.id) pm.environment.set('place_id', body[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PLACE-03 Buscar lugares RPC",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_query\": \"playa\",\n  \"p_category_id\": null,\n  \"p_locale\": \"es\",\n  \"p_limit\": 20,\n  \"p_offset\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/rpc/search_places"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Búsqueda 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PLACE-04 Lugares cercanos RPC",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_latitude\": -0.9538,\n  \"p_longitude\": -80.7331,\n  \"p_radius_meters\": 5000,\n  \"p_category_id\": null,\n  \"p_locale\": \"es\",\n  \"p_limit\": 30\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/rpc/nearby_places"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Cercanos 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "REC-01 Recomendaciones RPC",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_locale\": \"es\",\n  \"p_latitude\": -0.9538,\n  \"p_longitude\": -80.7331,\n  \"p_limit\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/rpc/get_recommendations"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Recomendaciones 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PLACE-05 Detalle RPC",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_place_id\": \"{{place_id}}\",\n  \"p_locale\": \"es\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/rpc/get_place_detail",
+            "description": "Requiere place_id de un lugar publicado. PLACE-01 guarda automáticamente el primer lugar del catálogo cloud."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Detalle 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Usuario autenticado",
+      "item": [
+        {
+          "name": "AUTH-02B Restaurar sesión para pruebas CRUD",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/auth/v1/token?grant_type=password"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login CRUD 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.environment.set('access_token', body.access_token);",
+                  "pm.environment.set('refresh_token', body.refresh_token);",
+                  "pm.environment.set('user_id', body.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "USER-01 Obtener perfil propio",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/rest/v1/profiles?id=eq.{{user_id}}&select=id,display_name,avatar_path,preferred_language,created_at"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Perfil 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Solo devuelve el perfil propio', () => { pm.expect(body).to.be.an('array').with.lengthOf(1); pm.expect(body[0].id).to.eql(pm.environment.get('user_id')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "USER-02 Actualizar perfil propio",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"display_name\": \"Turista Manta\",\n  \"preferred_language\": \"es\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/profiles?id=eq.{{user_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Actualización 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array').with.lengthOf(1);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "USER-03 Listar intereses propios",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/rest/v1/user_interests?user_id=eq.{{user_id}}&select=category_id,weight,categories(slug)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Intereses 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "USER-04 Upsert interés",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "resolution=merge-duplicates,return=representation",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"category_id\": {{category_id}},\n  \"weight\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/user_interests?on_conflict=user_id,category_id"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Upsert 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.expect(pm.response.json()).to.be.an('array').with.lengthOf(1);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "FAV-02 Agregar favorito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"place_id\": \"{{place_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/favorites",
+            "description": "Requiere place_id publicado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Favorito creado', () => pm.response.to.have.status(201));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "REVIEW-02 Crear reseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"place_id\": \"{{place_id}}\",\n  \"user_id\": \"{{user_id}}\",\n  \"rating\": 5,\n  \"comment\": \"Excelente lugar para visitar.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/reviews",
+            "description": "Requiere place_id publicado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reseña creada', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body[0]?.id) pm.environment.set('review_id', body[0].id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Seguridad negativa",
+      "item": [
+        {
+          "name": "SEC-01 Perfil sin JWT",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/rest/v1/profiles?select=*"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Anon no puede consultar profiles', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SEC-02 Editar perfil ajeno",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"display_name\": \"Intento bloqueado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/profiles?id=eq.{{other_user_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('RLS no modifica filas ajenas', () => { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.be.an('array').that.is.empty; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SEC-03 Intentar asignarse admin",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/user_roles?user_id=eq.{{user_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Escalada de privilegios bloqueada', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SEC-04 Coordenadas inválidas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_latitude\": 100,\n  \"p_longitude\": -80.7331,\n  \"p_radius_meters\": 5000,\n  \"p_category_id\": null,\n  \"p_locale\": \"es\",\n  \"p_limit\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/rpc/nearby_places"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Coordenadas inválidas rechazadas', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 - CRUD protegido completo",
+      "item": [
+        {
+          "name": "REVIEW-01 Listar reseñas publicadas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/rest/v1/reviews?place_id=eq.{{place_id}}&status=eq.published&select=id,rating,comment,created_at&order=created_at.desc"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reseñas públicas 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "REVIEW-03 Editar reseña propia",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4,\n  \"comment\": \"Muy bonito y agradable para visitar.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/reviews?id=eq.{{review_id}}&user_id=eq.{{user_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reseña editada', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array').with.lengthOf(1);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "FAV-01 Listar favoritos propios",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/rest/v1/favorites?user_id=eq.{{user_id}}&select=place_id,created_at"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Favoritos 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array').with.lengthOf(1);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "VOTE-01 Upsert voto turístico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "resolution=merge-duplicates,return=representation",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"place_id\": \"{{place_id}}\",\n  \"is_touristic\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/tourist_votes?on_conflict=user_id,place_id"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Voto guardado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.expect(pm.response.json()).to.be.an('array').with.lengthOf(1);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SUG-01 Proponer lugar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submitted_by\": \"{{user_id}}\",\n  \"category_id\": {{category_id}},\n  \"name\": \"Mirador de prueba Fase 5\",\n  \"description\": \"Sugerencia temporal creada por las pruebas automatizadas del backend.\",\n  \"address\": \"Manta, Manabí\",\n  \"location\": \"POINT(-80.7331 -0.9538)\",\n  \"evidence_url\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/place_suggestions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Sugerencia creada', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body[0]?.id) pm.environment.set('suggestion_id', body[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SUG-02 Listar sugerencias propias",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/rest/v1/place_suggestions?submitted_by=eq.{{user_id}}&select=*&order=created_at.desc"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Sugerencias propias 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty;"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "REPORT-01 Reportar contenido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reporter_id\": \"{{user_id}}\",\n  \"target_type\": \"place\",\n  \"target_id\": \"{{place_id}}\",\n  \"reason\": \"incorrect_information\",\n  \"details\": \"Reporte temporal generado durante las pruebas de Fase 5.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/reports"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reporte creado', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body[0]?.id) pm.environment.set('report_id', body[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IMG-01 Subir imagen de prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "image/png",
+                "type": "text"
+              },
+              {
+                "key": "x-upsert",
+                "value": "false",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": "{{image_file_path}}"
+              }
+            },
+            "url": "{{supabase_url}}/storage/v1/object/place-images/{{user_id}}/{{file_uuid}}.png"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Imagen subida', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IMG-02 Registrar metadatos pendientes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"place_id\": \"{{place_id}}\",\n  \"review_id\": \"{{review_id}}\",\n  \"uploader_id\": \"{{user_id}}\",\n  \"storage_path\": \"{{user_id}}/{{file_uuid}}.png\",\n  \"alt_text\": \"Imagen temporal para validar Storage\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/rest/v1/place_images"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Metadatos creados', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body[0]?.id) pm.environment.set('image_id', body[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "USER-05 Eliminar interés",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/rest/v1/user_interests?user_id=eq.{{user_id}}&category_id=eq.{{category_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Interés eliminado', () => pm.response.to.have.status(204));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "FAV-03 Quitar favorito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/rest/v1/favorites?user_id=eq.{{user_id}}&place_id=eq.{{place_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Favorito eliminado', () => pm.response.to.have.status(204));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "VOTE-02 Eliminar voto",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/rest/v1/tourist_votes?user_id=eq.{{user_id}}&place_id=eq.{{place_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Voto eliminado', () => pm.response.to.have.status(204));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IMG-04 Eliminar metadatos pendientes",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/rest/v1/place_images?id=eq.{{image_id}}&uploader_id=eq.{{user_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Metadatos eliminados', () => pm.response.to.have.status(204));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IMG-05 Eliminar archivo temporal",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/storage/v1/object/place-images/{{user_id}}/{{file_uuid}}.png"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Archivo eliminado', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 - Edge Functions",
+      "item": [
+        {
+          "name": "ROUTE-01 Vista previa de ruta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin\": { \"latitude\": -0.9538, \"longitude\": -80.7331 },\n  \"destination\": { \"latitude\": -0.93745, \"longitude\": -80.72902 },\n  \"profile\": \"foot-walking\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/functions/v1/route-preview"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Función de rutas responde de forma controlada', () => pm.expect(pm.response.code).to.be.oneOf([200, 503]));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body).to.have.any.keys('distanceMeters', 'error');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN-NEG-01 Usuario normal rechazado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/functions/v1/admin-places?limit=5"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Usuario normal recibe 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "AUTH-ADMIN Iniciar sesión administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/auth/v1/token?grant_type=password"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login admin 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.environment.set('admin_access_token', body.access_token);",
+                  "pm.environment.set('admin_refresh_token', body.refresh_token);",
+                  "pm.environment.set('admin_user_id', body.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN-PLACE-01 Listar lugares",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/functions/v1/admin-places?limit=5&offset=0"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Listado admin 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().items).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN-PLACE-02 Crear lugar temporal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": {{category_id}},\n  \"latitude\": -0.9538,\n  \"longitude\": -80.7331,\n  \"address\": \"Manta, Manabí\",\n  \"priceLevel\": 0,\n  \"isFeatured\": false,\n  \"status\": \"pending\",\n  \"translations\": {\n    \"es\": { \"name\": \"Lugar temporal Fase 5\", \"shortDescription\": \"Lugar creado por una prueba automatizada.\", \"description\": \"Este registro temporal valida la creación administrativa completa.\" },\n    \"en\": { \"name\": \"Temporary Phase 5 place\", \"shortDescription\": \"Place created by an automated backend test.\", \"description\": \"This temporary record validates the complete administrative creation flow.\" }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/functions/v1/admin-places"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lugar admin creado', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body.id) pm.environment.set('admin_place_id', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN-PLACE-03 Editar lugar temporal",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isFeatured\": true,\n  \"status\": \"pending\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/functions/v1/admin-places/{{admin_place_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lugar admin editado', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().is_featured).to.eql(true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN-MOD-01 Moderar reseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetType\": \"review\",\n  \"targetId\": \"{{review_id}}\",\n  \"decision\": \"archive\",\n  \"notes\": \"Moderación automatizada de Fase 5\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/functions/v1/moderate-content"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Reseña moderada', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN-SUG-01 Listar sugerencias",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/functions/v1/admin-suggestions?status=pending"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Sugerencias admin 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN-SUG-02 Rechazar sugerencia temporal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"suggestionId\": \"{{suggestion_id}}\",\n  \"decision\": \"reject\",\n  \"notes\": \"Sugerencia temporal de pruebas\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/functions/v1/review-suggestion"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Sugerencia revisada', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN-REPORT-01 Listar reportes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/functions/v1/admin-reports?status=open"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Reportes admin 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN-REPORT-02 Resolver reporte",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reportId\": \"{{report_id}}\",\n  \"resolution\": \"dismissed\",\n  \"moderationAction\": \"none\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{supabase_url}}/functions/v1/resolve-report"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Reporte resuelto', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN-PLACE-04 Archivar lugar temporal",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/functions/v1/admin-places/{{admin_place_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lugar archivado', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('archived');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 - Limpieza de sesión",
+      "item": [
+        {
+          "name": "AUTH-04 Cerrar sesión de usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/auth/v1/logout"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Logout usuario exitoso', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "AUTH-ADMIN-LOGOUT Cerrar sesión admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{supabase_url}}/auth/v1/logout"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Logout admin exitoso', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

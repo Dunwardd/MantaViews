@@ -107,44 +107,53 @@ Criterio de aceptación: un usuario no puede leer ni modificar recursos privados
 ## 7. Fase 4 — Autenticación
 
 - [x] Configurar registro por correo y contraseña.
-- [x] Configurar confirmación de correo según necesidades de la demo.
+- [x] Desactivar la confirmación obligatoria de correo para el MVP académico.
 - [x] Implementar login y cierre de sesión.
 - [x] Implementar recuperación y cambio de contraseña.
 - [x] Restaurar/refrescar sesión al abrir la app.
 - [x] Crear provider/hook de sesión.
 - [x] Implementar rutas protegidas y guard de acciones contextuales.
-- [ ] Configurar Google OAuth en Supabase.
-- [ ] Configurar esquema y redirect URI para development build/web.
-- [ ] Probar Google OAuth fuera de Expo Go.
+- [x] Configurar Google OAuth en Supabase.
+- [x] Configurar esquema y redirect URI para development build/web.
+- [x] Probar Google OAuth fuera de Expo Go.
 - [x] Limpiar caché privada al cerrar sesión.
-- [x] Verificar en Cloud que email, registro y confirmación están habilitados.
+- [x] Verificar en Cloud que email y registro están habilitados y **Confirm email** está desactivado.
+- [x] Documentar que el SMTP y la recuperación por correo quedan fuera del flujo crítico del MVP.
+- [x] Verificar que un usuario nuevo recibe una sesión inmediatamente después del registro.
 - [x] Validar visualmente login, registro, guard y perfil invitado en web.
 
 Criterio de aceptación: email/password completo y sesión persistente; Google probado en una plataforma de presentación si forma parte del MVP.
 
 ## 8. Fase 5 — Backend y endpoints
 
-- [ ] Definir validaciones Zod compartidas para bodies y parámetros.
-- [ ] Verificar endpoints Auth en Postman.
-- [ ] Verificar Data API pública para categorías y lugares.
-- [ ] Verificar RPC de búsqueda, detalle y cercanía.
-- [ ] Verificar CRUD de perfil e intereses.
-- [ ] Verificar CRUD de reseñas, favoritos y votos.
-- [ ] Verificar sugerencias, imágenes y reportes.
-- [ ] Implementar Edge Function `route-preview`.
+- [x] Definir validaciones Zod compartidas para bodies y parámetros.
+- [x] Verificar endpoints Auth en Postman.
+- [x] Verificar Data API pública para categorías y lugares.
+- [x] Verificar RPC de búsqueda, detalle y cercanía.
+- [x] Verificar CRUD de perfil e intereses.
+- [x] Verificar CRUD de reseñas, favoritos y votos.
+- [x] Verificar sugerencias, imágenes y reportes.
+- [x] Implementar y desplegar Edge Function `route-preview`.
 - [ ] Guardar la clave del proveedor de rutas como secreto server-side.
-- [ ] Normalizar errores del proveedor externo.
-- [ ] Implementar timeout y límites de solicitudes para rutas.
-- [ ] Implementar Edge Function `admin-places`.
-- [ ] Implementar Edge Function `admin-suggestions`/`review-suggestion`.
-- [ ] Implementar Edge Function `moderate-content`.
-- [ ] Implementar Edge Function `admin-reports`/`resolve-report`.
-- [ ] Registrar acciones administrativas en auditoría.
-- [ ] Crear y exportar colección Postman sin secretos.
-- [ ] Crear entorno Postman de ejemplo.
-- [ ] Añadir tests automáticos básicos en Postman.
+- [ ] Verificar una ruta real con OpenRouteService después de configurar el secreto.
+- [x] Normalizar errores del proveedor externo.
+- [x] Implementar timeout y límites de solicitudes para rutas.
+- [x] Implementar Edge Function `admin-places`.
+- [x] Implementar Edge Function `admin-suggestions`/`review-suggestion`.
+- [x] Implementar Edge Function `moderate-content`.
+- [x] Implementar Edge Function `admin-reports`/`resolve-report`.
+- [x] Registrar acciones administrativas en auditoría.
+- [x] Crear y exportar colección Postman sin secretos.
+- [x] Crear entorno Postman de ejemplo.
+- [x] Añadir tests automáticos de éxito, validación, autenticación y autorización en Postman.
+- [x] Ejecutar la colección completa: 49 solicitudes y 53 aserciones sin fallos.
+- [x] Revisar asesores de seguridad y rendimiento de Supabase.
+- [x] Restringir la función interna de RLS y evitar el listado público de avatares.
+- [x] Añadir índices para las claves foráneas detectadas por el asesor.
 
 Criterio de aceptación: la colección Postman cubre casos exitosos, validación, autenticación y autorización.
+
+Nota de seguridad: el asesor conserva únicamente el aviso de protección contra contraseñas filtradas. Supabase ofrece esa comprobación desde el plan Pro, por lo que se documenta como mejora futura y no como requisito del MVP gratuito.
 
 ## 9. Fase 6 — Base visual y navegación frontend
 
@@ -164,18 +173,21 @@ Criterio de aceptación: navegación completa con pantallas placeholder y diseñ
 ## 10. Fase 7 — Experiencia pública
 
 - [ ] Implementar onboarding e idioma inicial.
-- [ ] Implementar pantalla Explorar.
-- [ ] Mostrar categorías.
-- [ ] Mostrar lugares destacados.
+- [x] Implementar pantalla Explorar.
+- [x] Mostrar categorías desde Supabase Cloud.
+- [x] Mostrar lugares destacados desde Supabase Cloud.
 - [ ] Integrar recomendaciones para invitado.
-- [ ] Implementar búsqueda con debounce.
-- [ ] Implementar filtros por categoría, distancia y valoración.
+- [x] Implementar búsqueda con debounce.
+- [x] Implementar filtro por categoría.
+- [ ] Implementar filtros por distancia y valoración.
 - [ ] Implementar listado paginado.
-- [ ] Implementar detalle del lugar.
+- [x] Implementar detalle del lugar.
 - [ ] Mostrar portada, galería, horario y contacto.
-- [ ] Mostrar estadísticas y reseñas.
-- [ ] Añadir compartir y enlaces externos seguros.
-- [ ] Verificar estados de carga, vacío, error y reintento.
+- [x] Mostrar estadísticas agregadas del lugar.
+- [ ] Mostrar reseñas publicadas.
+- [x] Añadir enlaces externos seguros para ruta y sitio web.
+- [ ] Añadir la acción de compartir.
+- [x] Verificar estados de carga, vacío, error y reintento.
 
 Criterio de aceptación: un invitado puede descubrir un lugar desde inicio o búsqueda y consultar toda su información publicada.
 
@@ -265,6 +277,7 @@ Criterio de aceptación: no hay bloqueos funcionales, secretos expuestos ni text
 
 ## 16. Fase 13 — Datos, demo y entrega
 
+- [x] Cargar un catálogo técnico inicial de 8 lugares con traducciones y coordenadas verificadas.
 - [ ] Recopilar 30–50 lugares con fuente verificable.
 - [ ] Revisar coordenadas y categorías.
 - [ ] Crear descripciones originales en español.
@@ -273,7 +286,7 @@ Criterio de aceptación: no hay bloqueos funcionales, secretos expuestos ni text
 - [ ] Ejecutar seed final.
 - [ ] Crear cuentas demo: usuario y administrador.
 - [ ] Preparar datos para mostrar recomendaciones y moderación.
-- [ ] Ejecutar colección Postman completa.
+- [x] Ejecutar colección Postman completa para el backend de la fase 5.
 - [ ] Crear development build Android si se requiere OAuth Google.
 - [ ] Preparar alternativa Expo Go mediante QR/túnel.
 - [ ] Verificar Supabase y el proveedor de rutas el día anterior.
@@ -333,7 +346,7 @@ El MVP está terminado cuando:
 - [ ] Un administrador gestiona lugares y modera contenido desde web.
 - [ ] Las recomendaciones funcionan para invitados y usuarios.
 - [ ] Español e inglés están disponibles.
-- [ ] RLS y endpoints superan pruebas negativas en Postman.
+- [x] RLS y endpoints superan pruebas negativas en Postman.
 - [ ] La ubicación no se almacena.
 - [ ] La aplicación se demuestra desde al menos dos dispositivos.
-- [ ] README, colección Postman y variables de ejemplo están entregables.
+- [x] README, colección Postman y variables de ejemplo están entregables.

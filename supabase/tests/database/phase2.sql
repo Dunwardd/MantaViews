@@ -73,16 +73,20 @@ values
   );
 
 select results_eq(
-  $$ select count(*)::bigint from public.nearby_places(-0.9431, -80.7284, 1000, null, 'es', 20) $$,
+  $$
+    select count(*)::bigint
+    from public.nearby_places(-0.9431, -80.7284, 1000, null, 'es', 20)
+    where place_id = '00000000-0000-0000-0000-000000000101'::uuid
+  $$,
   array[1::bigint],
-  'nearby RPC finds a point at the supplied coordinates'
+  'nearby RPC finds the synthetic point at the supplied coordinates'
 );
 
 select ok(
   (
     select distance_meters < 1
     from public.nearby_places(-0.9431, -80.7284, 1000, null, 'es', 20)
-    limit 1
+    where place_id = '00000000-0000-0000-0000-000000000101'::uuid
   ),
   'nearby RPC returns a correct near-zero distance'
 );

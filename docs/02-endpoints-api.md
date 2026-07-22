@@ -11,6 +11,8 @@ El backend combina:
 
 No se usa `service_role` desde Postman ni desde la aplicación. Las pruebas administrativas usan el JWT de una cuenta con rol `admin`.
 
+Las Edge Functions aceptan la clave publicable en `apikey` y validan explícitamente el JWT de usuario antes de autorizar operaciones. Las funciones administrativas consultan `user_roles` en servidor; nunca confían en datos editables del perfil o del token para conceder el rol.
+
 ## 2. Variables del entorno Postman
 
 ```text
@@ -207,11 +209,11 @@ Autenticación: pública.
 
 ```json
 {
-  "query_text": "playa",
-  "category_slug": null,
-  "requested_locale": "es",
-  "page_size": 20,
-  "page_offset": 0
+  "p_query": "playa",
+  "p_category_id": null,
+  "p_locale": "es",
+  "p_limit": 20,
+  "p_offset": 0
 }
 ```
 
@@ -223,12 +225,12 @@ Validar: búsqueda vacía, texto parcial, acentos, idioma y paginación máxima.
 
 ```json
 {
-  "user_latitude": -0.9538,
-  "user_longitude": -80.7331,
-  "radius_meters": 5000,
-  "category_filter": null,
-  "requested_locale": "es",
-  "result_limit": 30
+  "p_latitude": -0.9538,
+  "p_longitude": -80.7331,
+  "p_radius_meters": 5000,
+  "p_category_id": null,
+  "p_locale": "es",
+  "p_limit": 30
 }
 ```
 
@@ -240,8 +242,8 @@ La función recibe la ubicación, responde y no la persiste.
 
 ```json
 {
-  "requested_place_id": "{{place_id}}",
-  "requested_locale": "es"
+  "p_place_id": "{{place_id}}",
+  "p_locale": "es"
 }
 ```
 
@@ -413,10 +415,10 @@ Autenticación: opcional. Con JWT usa intereses, favoritos y reseñas; sin sesi�
 
 ```json
 {
-  "requested_locale": "es",
-  "user_latitude": -0.9538,
-  "user_longitude": -80.7331,
-  "result_limit": 10
+  "p_locale": "es",
+  "p_latitude": -0.9538,
+  "p_longitude": -80.7331,
+  "p_limit": 10
 }
 ```
 
@@ -456,7 +458,9 @@ Respuesta normalizada:
 }
 ```
 
-La Edge Function protege la clave externa, valida que las coordenadas estén en un rango razonable y no registra el body.
+La Edge Function protege la clave externa, admite `foot-walking`, `driving-car` y `cycling-regular`, valida que ambas coordenadas estén dentro del área de Manta y no registra el body. También aplica un timeout de 8 segundos, límite de 30 solicitudes por minuto y errores JSON normalizados.
+
+Mientras `OPENROUTESERVICE_API_KEY` no esté configurado como secreto de Supabase, este endpoint devuelve `503 ROUTING_PROVIDER_NOT_CONFIGURED`. Esa respuesta controlada está cubierta por Postman, pero la ruta real permanece pendiente.
 
 ## 11. Administración
 
