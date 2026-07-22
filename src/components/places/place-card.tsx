@@ -1,6 +1,8 @@
 import { Link, type Href } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
+import { PlaceCover } from '@/components/places/place-cover';
+import { RatingDisplay } from '@/components/ui/rating-display';
 import type { TourismPlace } from '@/services/catalog/place-service';
 import { brandColors, colors, spacing } from '@/theme';
 
@@ -28,6 +30,11 @@ export function PlaceCard({ categoryName, place }: PlaceCardProps) {
           transform: [{ scale: pressed ? 0.99 : 1 }],
         })}
       >
+        <PlaceCover
+          categoryColor={place.categoryColor}
+          name={place.name}
+          url={place.coverImageUrl}
+        />
         <View
           style={{
             backgroundColor: `${place.categoryColor}20`,
@@ -54,10 +61,7 @@ export function PlaceCard({ categoryName, place }: PlaceCardProps) {
                 width: 10,
               }}
             />
-            <Text
-              selectable
-              style={{ color: place.categoryColor, fontSize: 12, fontWeight: '800' }}
-            >
+            <Text selectable style={{ color: colors.label, fontSize: 12, fontWeight: '800' }}>
               {categoryName.toUpperCase()}
             </Text>
             {place.isFeatured ? (
@@ -88,21 +92,16 @@ export function PlaceCard({ categoryName, place }: PlaceCardProps) {
             {place.shortDescription}
           </Text>
           {place.averageRating !== undefined ? (
-            <Text
-              selectable
-              style={{
-                color: brandColors.deepTeal,
-                fontSize: 13,
-                fontVariant: ['tabular-nums'],
-                fontWeight: '700',
-              }}
-            >
-              {place.averageRating.toFixed(1)} / 5 · {place.reviewCount ?? 0} reseñas
-            </Text>
+            <RatingDisplay count={place.reviewCount ?? 0} value={place.averageRating} />
           ) : null}
           <Text selectable style={{ color: brandColors.primary, fontSize: 13, fontWeight: '700' }}>
             {place.address}
           </Text>
+          {place.distanceMeters !== undefined ? (
+            <Text selectable style={{ color: colors.secondaryLabel, fontSize: 13 }}>
+              {formatDistance(place.distanceMeters)} desde el centro de Manta
+            </Text>
+          ) : null}
           <Text selectable style={{ color: brandColors.deepTeal, fontSize: 13, fontWeight: '800' }}>
             Ver detalles →
           </Text>
@@ -110,4 +109,9 @@ export function PlaceCard({ categoryName, place }: PlaceCardProps) {
       </Pressable>
     </Link>
   );
+}
+
+function formatDistance(distanceMeters: number) {
+  if (distanceMeters < 1000) return `${Math.round(distanceMeters)} m`;
+  return `${(distanceMeters / 1000).toFixed(1)} km`;
 }

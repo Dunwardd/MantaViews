@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 
 import { AuthButton } from '@/components/auth/auth-button';
+import { FeedbackState, LoadingState } from '@/components/ui/feedback-state';
 import { StatusCard } from '@/components/ui/status-card';
 import { useAuth } from '@/providers/auth-provider';
-import { brandColors, colors, spacing } from '@/theme';
+import { brandColors, colors, layout, spacing } from '@/theme';
 
 export function FavoritesScreen() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -12,16 +13,21 @@ export function FavoritesScreen() {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ gap: spacing.lg, padding: spacing.lg }}
+      contentContainerStyle={{
+        alignSelf: 'center',
+        gap: spacing.lg,
+        maxWidth: layout.contentMaxWidth,
+        padding: spacing.lg,
+        width: '100%',
+      }}
       style={{ backgroundColor: colors.background }}
     >
       {isLoading ? (
-        <ActivityIndicator color={brandColors.primary} />
+        <LoadingState label="Consultando tus favoritos…" />
       ) : isAuthenticated ? (
-        <StatusCard
-          accent={brandColors.lime}
+        <FeedbackState
           title="Tus lugares favoritos"
-          description="Tu sesión está activa. La lista sincronizada de lugares se conectará en la fase de endpoints sociales."
+          description="Todavía no has guardado lugares. Cuando marques uno como favorito aparecerá aquí."
         />
       ) : (
         <>

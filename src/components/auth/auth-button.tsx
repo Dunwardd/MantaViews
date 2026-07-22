@@ -1,6 +1,4 @@
-import { ActivityIndicator, Pressable, Text } from 'react-native';
-
-import { brandColors, colors } from '@/theme';
+import { AppButton } from '@/components/ui/app-button';
 
 type AuthButtonProps = {
   disabled?: boolean;
@@ -17,40 +15,13 @@ export function AuthButton({
   onPress,
   variant = 'primary',
 }: AuthButtonProps) {
-  const isDisabled = Boolean(disabled || loading);
-  const isPrimary = variant === 'primary';
-
   return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={isDisabled}
+    <AppButton
+      disabled={disabled}
+      label={label}
+      loading={loading}
       onPress={onPress}
-      style={({ pressed }) => ({
-        alignItems: 'center',
-        backgroundColor: isPrimary ? brandColors.primary : colors.surface,
-        borderColor: isPrimary ? brandColors.primary : colors.separator,
-        borderCurve: 'continuous',
-        borderRadius: 14,
-        borderWidth: 1,
-        justifyContent: 'center',
-        minHeight: 52,
-        opacity: isDisabled ? 0.55 : pressed ? 0.78 : 1,
-        paddingHorizontal: 18,
-      })}
-    >
-      {loading ? (
-        <ActivityIndicator color={isPrimary ? brandColors.white : brandColors.primary} />
-      ) : (
-        <Text
-          style={{
-            color: isPrimary ? brandColors.white : brandColors.deepTeal,
-            fontSize: 16,
-            fontWeight: '800',
-          }}
-        >
-          {label}
-        </Text>
-      )}
-    </Pressable>
+      variant={variant}
+    />
   );
 }

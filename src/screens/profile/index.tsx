@@ -1,15 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Platform, ScrollView, Text, View } from 'react-native';
+import { Alert, ScrollView, Text } from 'react-native';
 
 import { AuthButton } from '@/components/auth/auth-button';
 import { AuthNotice } from '@/components/auth/auth-notice';
+import { AppAvatar } from '@/components/ui/app-avatar';
+import { AppButton } from '@/components/ui/app-button';
+import { AppIcon } from '@/components/ui/app-icon';
+import { LoadingState } from '@/components/ui/feedback-state';
+import { SurfaceCard } from '@/components/ui/surface-card';
 import { StatusCard } from '@/components/ui/status-card';
 import { useAuth } from '@/providers/auth-provider';
 import { getAuthErrorMessage } from '@/services/auth/auth-errors';
 import { getCurrentProfile, getCurrentUserIsAdmin } from '@/services/profiles/profile-service';
-import { brandColors, colors, spacing } from '@/theme';
+import { brandColors, colors, layout, spacing, typography } from '@/theme';
 
 export function ProfileScreen() {
   const { isAuthenticated, isLoading, signOut, user } = useAuth();
@@ -44,7 +49,7 @@ export function ProfileScreen() {
   const confirmSignOut = () => {
     const message = 'Se eliminará la sesión guardada en este dispositivo.';
 
-    if (Platform.OS === 'web') {
+    if (process.env.EXPO_OS === 'web') {
       if (window.confirm(`Cerrar sesión\n\n${message}`)) {
         void handleSignOut();
       }
@@ -65,10 +70,16 @@ export function ProfileScreen() {
     return (
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ alignItems: 'center', padding: spacing.xl }}
+        contentContainerStyle={{
+          alignItems: 'center',
+          alignSelf: 'center',
+          maxWidth: layout.contentMaxWidth,
+          padding: spacing.xl,
+          width: '100%',
+        }}
         style={{ backgroundColor: colors.background }}
       >
-        <ActivityIndicator color={brandColors.primary} />
+        <LoadingState label="Preparando tu perfil…" />
       </ScrollView>
     );
   }
@@ -77,7 +88,13 @@ export function ProfileScreen() {
     return (
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ gap: spacing.lg, padding: spacing.lg }}
+        contentContainerStyle={{
+          alignSelf: 'center',
+          gap: spacing.lg,
+          maxWidth: layout.contentMaxWidth,
+          padding: spacing.lg,
+          width: '100%',
+        }}
         style={{ backgroundColor: colors.background }}
       >
         <StatusCard
@@ -98,36 +115,22 @@ export function ProfileScreen() {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ gap: spacing.lg, padding: spacing.lg }}
+      contentContainerStyle={{
+        alignSelf: 'center',
+        gap: spacing.lg,
+        maxWidth: layout.contentMaxWidth,
+        padding: spacing.lg,
+        width: '100%',
+      }}
       style={{ backgroundColor: colors.background }}
     >
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          borderColor: colors.separator,
-          borderCurve: 'continuous',
-          borderRadius: 24,
-          borderWidth: 1,
-          gap: spacing.sm,
-          padding: spacing.lg,
-        }}
-      >
-        <View
-          style={{
-            alignItems: 'center',
-            alignSelf: 'flex-start',
-            backgroundColor: brandColors.lightOcean,
-            borderRadius: 999,
-            height: 64,
-            justifyContent: 'center',
-            width: 64,
-          }}
-        >
-          <Text style={{ color: brandColors.deepTeal, fontSize: 26, fontWeight: '800' }}>
-            {(profileQuery.data?.display_name ?? user.email ?? 'M').charAt(0).toUpperCase()}
-          </Text>
-        </View>
-        <Text selectable style={{ color: colors.label, fontSize: 24, fontWeight: '800' }}>
+      <SurfaceCard>
+        <AppAvatar
+          label={profileQuery.data?.display_name ?? user.email ?? 'MantaViews'}
+          size={64}
+          uri={null}
+        />
+        <Text selectable style={{ ...typography.title, color: colors.label }}>
           {profileQuery.data?.display_name ?? user.user_metadata.display_name ?? 'Viajero de Manta'}
         </Text>
         <Text selectable style={{ color: colors.secondaryLabel, fontSize: 15 }}>
@@ -138,7 +141,7 @@ export function ProfileScreen() {
             Administrador de MantaViews
           </Text>
         ) : null}
-      </View>
+      </SurfaceCard>
 
       {profileQuery.isError ? (
         <AuthNotice message="Tu sesión está activa, pero no pudimos cargar el perfil. Intenta nuevamente." />
@@ -150,6 +153,13 @@ export function ProfileScreen() {
       />
 
       {signOutError ? <AuthNotice message={signOutError} /> : null}
+
+      <AppButton
+        icon={<AppIcon color={brandColors.primary} name="settings" size={20} />}
+        label="Preferencias"
+        onPress={() => router.push('/preferences' as Href)}
+        variant="secondary"
+      />
 
       <AuthButton
         label="Cerrar sesión"

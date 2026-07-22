@@ -23,7 +23,8 @@ export function AuthScreenLayout({ children, footer, subtitle, title }: AuthScre
       >
         <View style={{ alignItems: 'center', gap: spacing.sm, maxWidth: 480, width: '100%' }}>
           <Image
-            source={require('../../../assets/images/brand-logo.jpeg')}
+            accessibilityLabel="Logo de MantaViews"
+            source={require('../../../assets/images/mantaviews-app-icon.png')}
             contentFit="contain"
             style={{ borderRadius: 24, height: 116, width: 116 }}
           />

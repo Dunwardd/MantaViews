@@ -157,36 +157,36 @@ Nota de seguridad: el asesor conserva únicamente el aviso de protección contra
 
 ## 9. Fase 6 — Base visual y navegación frontend
 
-- [ ] Crear tokens de color según la identidad MantaViews.
-- [ ] Definir tipografía, espaciado, radios y sombras.
-- [ ] Preparar logo e icono definitivos.
-- [ ] Implementar componentes base: botón, input, tarjeta, chip, rating, avatar y estados.
-- [ ] Implementar componentes de carga, vacío y error.
-- [ ] Crear root layout con proveedores de sesión, Query y traducción.
-- [ ] Crear tabs: Explorar, Mapa, Favoritos y Perfil.
-- [ ] Crear stacks y rutas modales.
-- [ ] Verificar safe areas y tamaños de pantalla.
-- [ ] Verificar contraste, labels accesibles y tamaño táctil.
+- [x] Crear tokens de color según la identidad MantaViews.
+- [x] Definir tipografía, espaciado, radios y sombras.
+- [x] Preparar logo e icono definitivos.
+- [x] Implementar componentes base: botón, input, tarjeta, chip, rating, avatar y estados.
+- [x] Implementar componentes de carga, vacío y error.
+- [x] Crear root layout con proveedores de sesión, Query y traducción.
+- [x] Crear tabs: Explorar, Mapa, Favoritos y Perfil.
+- [x] Crear stacks y rutas modales.
+- [x] Verificar safe areas y tamaños de pantalla.
+- [x] Verificar contraste, labels accesibles y tamaño táctil.
 
 Criterio de aceptación: navegación completa con pantallas placeholder y diseño consistente en Android, iOS y web.
 
 ## 10. Fase 7 — Experiencia pública
 
-- [ ] Implementar onboarding e idioma inicial.
+- [x] Implementar onboarding e idioma inicial.
 - [x] Implementar pantalla Explorar.
 - [x] Mostrar categorías desde Supabase Cloud.
 - [x] Mostrar lugares destacados desde Supabase Cloud.
-- [ ] Integrar recomendaciones para invitado.
+- [x] Integrar recomendaciones para invitado.
 - [x] Implementar búsqueda con debounce.
 - [x] Implementar filtro por categoría.
-- [ ] Implementar filtros por distancia y valoración.
-- [ ] Implementar listado paginado.
+- [x] Implementar filtros por distancia y valoración.
+- [x] Implementar listado paginado.
 - [x] Implementar detalle del lugar.
-- [ ] Mostrar portada, galería, horario y contacto.
+- [x] Mostrar portada, galería, horario y contacto.
 - [x] Mostrar estadísticas agregadas del lugar.
-- [ ] Mostrar reseñas publicadas.
+- [x] Mostrar reseñas publicadas.
 - [x] Añadir enlaces externos seguros para ruta y sitio web.
-- [ ] Añadir la acción de compartir.
+- [x] Añadir la acción de compartir.
 - [x] Verificar estados de carga, vacío, error y reintento.
 
 Criterio de aceptación: un invitado puede descubrir un lugar desde inicio o búsqueda y consultar toda su información publicada.

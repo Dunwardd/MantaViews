@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
-import { brandColors, colors, spacing } from '@/theme';
+import { SurfaceCard } from '@/components/ui/surface-card';
+import { brandColors, colors, typography } from '@/theme';
 
 type StatusCardProps = {
   title: string;
@@ -17,26 +18,15 @@ export function StatusCard({
   accent = brandColors.primary,
 }: StatusCardProps) {
   return (
-    <View
-      style={{
-        backgroundColor: colors.surface,
-        borderColor: colors.separator,
-        borderCurve: 'continuous',
-        borderRadius: 20,
-        borderWidth: 1,
-        boxShadow: '0 8px 24px rgba(3, 79, 85, 0.08)',
-        gap: spacing.sm,
-        padding: spacing.lg,
-      }}
-    >
+    <SurfaceCard>
       {icon}
       <View style={{ backgroundColor: accent, borderRadius: 999, height: 4, width: 42 }} />
-      <Text selectable style={{ color: colors.label, fontSize: 18, fontWeight: '700' }}>
+      <Text selectable style={{ ...typography.heading, color: colors.label, fontSize: 18 }}>
         {title}
       </Text>
-      <Text selectable style={{ color: colors.secondaryLabel, fontSize: 15, lineHeight: 22 }}>
+      <Text selectable style={{ ...typography.body, color: colors.secondaryLabel, fontSize: 15 }}>
         {description}
       </Text>
-    </View>
+    </SurfaceCard>
   );
 }

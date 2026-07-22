@@ -1,19 +1,46 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, type InfiniteData } from '@tanstack/react-query';
 import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
-import { AuthNotice } from '@/components/auth/auth-notice';
 import { PlaceCard } from '@/components/places/place-card';
+import { RecommendationCard } from '@/components/places/recommendation-card';
+import { AppButton } from '@/components/ui/app-button';
+import { FeedbackState, LoadingState } from '@/components/ui/feedback-state';
+import { FilterChip } from '@/components/ui/filter-chip';
 import { StatusCard } from '@/components/ui/status-card';
+import { useLocale } from '@/providers/locale-provider';
 import { getTourismCategories } from '@/services/catalog/category-service';
-import { getPublishedPlaces, searchTourismPlaces } from '@/services/catalog/place-service';
-import { brandColors, colors, spacing } from '@/theme';
+import {
+  getTourismRecommendations,
+  searchTourismPlaces,
+  type TourismPlace,
+} from '@/services/catalog/place-service';
+import { brandColors, colors, layout, spacing } from '@/theme';
+import { distanceInMeters, MANTA_CENTER } from '@/utils/geo';
+
+const PAGE_SIZE = 4;
+
+const distanceOptions = [
+  { label: 'Todas', value: null },
+  { label: 'Hasta 3 km', value: 3_000 },
+  { label: 'Hasta 8 km', value: 8_000 },
+  { label: 'Hasta 15 km', value: 15_000 },
+] as const;
+
+const ratingOptions = [
+  { label: 'Todas', value: 0 },
+  { label: '3 estrellas o más', value: 3 },
+  { label: '4 estrellas o más', value: 4 },
+] as const;
 
 export function ExploreScreen() {
+  const { locale } = useLocale();
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [maximumDistance, setMaximumDistance] = useState<number | null>(null);
+  const [minimumRating, setMinimumRating] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchText.trim()), 300);
@@ -21,32 +48,87 @@ export function ExploreScreen() {
   }, [searchText]);
 
   const categoriesQuery = useQuery({
-    queryFn: () => getTourismCategories('es'),
-    queryKey: ['public', 'categories', 'es'],
+    queryFn: () => getTourismCategories(locale),
+    queryKey: ['public', 'categories', locale],
   });
-  const hasActiveFilters = debouncedSearch.length > 0 || selectedCategoryId !== null;
-  const placesQuery = useQuery({
-    queryFn: () =>
-      hasActiveFilters
-        ? searchTourismPlaces({
-            categoryId: selectedCategoryId,
-            limit: 20,
-            locale: 'es',
-            query: debouncedSearch,
-          })
-        : getPublishedPlaces('es'),
+
+  const recommendationsQuery = useQuery({
+    queryFn: () => getTourismRecommendations(locale, 4),
+    queryKey: ['public', 'recommendations', locale, 4],
+  });
+
+  const placesQuery = useInfiniteQuery<
+    TourismPlace[],
+    Error,
+    InfiniteData<TourismPlace[], number>,
+    readonly unknown[],
+    number
+  >({
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length === PAGE_SIZE ? allPages.length * PAGE_SIZE : undefined,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      searchTourismPlaces({
+        categoryId: selectedCategoryId,
+        limit: PAGE_SIZE,
+        locale,
+        offset: pageParam,
+        query: debouncedSearch,
+      }),
     queryKey: [
       'public',
       'places',
-      'es',
-      { categoryId: selectedCategoryId, limit: hasActiveFilters ? 20 : 8, query: debouncedSearch },
+      locale,
+      { categoryId: selectedCategoryId, query: debouncedSearch },
     ],
   });
+
+  const loadedPlaces = useMemo(
+    () =>
+      (placesQuery.data?.pages.flat() ?? []).map<TourismPlace>((place) => ({
+        ...place,
+        distanceMeters:
+          place.latitude !== undefined && place.longitude !== undefined
+            ? distanceInMeters(MANTA_CENTER, {
+                latitude: place.latitude,
+                longitude: place.longitude,
+              })
+            : undefined,
+      })),
+    [placesQuery.data],
+  );
+
+  const visiblePlaces = loadedPlaces.filter(
+    (place) =>
+      (place.averageRating ?? 0) >= minimumRating &&
+      (maximumDistance === null ||
+        (place.distanceMeters !== undefined && place.distanceMeters <= maximumDistance)),
+  );
+
+  const hasLocalFilters = minimumRating > 0 || maximumDistance !== null;
+  const clearFilters = () => {
+    setSearchText('');
+    setDebouncedSearch('');
+    setSelectedCategoryId(null);
+    setMaximumDistance(null);
+    setMinimumRating(0);
+  };
+
+  const categoryFor = (place: TourismPlace) =>
+    categoriesQuery.data?.find(
+      (category) => category.id === place.categoryId || category.slug === place.categorySlug,
+    );
 
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ gap: spacing.xl, padding: spacing.lg }}
+      contentContainerStyle={{
+        alignSelf: 'center',
+        gap: spacing.xl,
+        maxWidth: layout.contentMaxWidth,
+        padding: spacing.lg,
+        width: '100%',
+      }}
       keyboardShouldPersistTaps="handled"
       style={{ backgroundColor: colors.background }}
     >
@@ -61,7 +143,8 @@ export function ExploreScreen() {
         }}
       >
         <Image
-          source={require('../../../assets/images/brand-logo.jpeg')}
+          accessibilityLabel="Logo de MantaViews"
+          source={require('../../../assets/images/mantaviews-app-icon.png')}
           contentFit="contain"
           style={{ borderRadius: 24, height: 150, width: 150 }}
         />
@@ -132,184 +215,193 @@ export function ExploreScreen() {
       </View>
 
       <View style={{ gap: spacing.md }}>
-        <View style={{ gap: spacing.xs }}>
-          <Text selectable style={{ color: colors.label, fontSize: 22, fontWeight: '800' }}>
-            Explora por categoría
-          </Text>
-          <Text selectable style={{ color: colors.secondaryLabel, fontSize: 14 }}>
-            Datos consultados en tiempo real desde Supabase Cloud
-          </Text>
-        </View>
-
+        <SectionHeading
+          description="Datos consultados en tiempo real desde Supabase Cloud"
+          title="Explora por categoría"
+        />
         {categoriesQuery.isPending ? (
-          <View style={{ alignItems: 'center', padding: spacing.xl }}>
-            <ActivityIndicator color={brandColors.primary} />
-          </View>
+          <LoadingState label="Consultando categorías…" />
         ) : categoriesQuery.isError ? (
-          <View style={{ gap: spacing.md }}>
-            <AuthNotice message="No pudimos consultar las categorías. Revisa tu conexión a internet." />
-            <RetryButton onPress={() => void categoriesQuery.refetch()} />
-          </View>
+          <FeedbackState
+            actionLabel="Reintentar"
+            description="No pudimos consultar las categorías. Revisa tu conexión a internet."
+            onAction={() => void categoriesQuery.refetch()}
+            title="Sin conexión al catálogo"
+            tone="error"
+          />
         ) : (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            <Pressable
-              accessibilityLabel="Mostrar todas las categorías"
-              accessibilityRole="button"
-              accessibilityState={{ selected: selectedCategoryId === null }}
+            <FilterChip
+              label="Todas"
               onPress={() => setSelectedCategoryId(null)}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                backgroundColor: selectedCategoryId === null ? brandColors.primary : colors.surface,
-                borderColor: brandColors.primary,
-                borderRadius: 999,
-                borderWidth: 1,
-                opacity: pressed ? 0.7 : 1,
-                paddingHorizontal: spacing.md,
-                paddingVertical: 10,
-              })}
-            >
-              <Text
-                style={{
-                  color: selectedCategoryId === null ? brandColors.white : brandColors.primary,
-                  fontSize: 14,
-                  fontWeight: '800',
-                }}
-              >
-                Todas
-              </Text>
-            </Pressable>
+              selected={selectedCategoryId === null}
+            />
             {categoriesQuery.data.map((category) => (
-              <Pressable
-                accessibilityLabel={`Filtrar por ${category.name}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: selectedCategoryId === category.id }}
+              <FilterChip
+                color={category.color}
                 key={category.id}
+                label={category.name}
                 onPress={() =>
                   setSelectedCategoryId((currentId) =>
                     currentId === category.id ? null : category.id,
                   )
                 }
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor:
-                    selectedCategoryId === category.id ? category.color : `${category.color}18`,
-                  borderColor: category.color,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  flexDirection: 'row',
-                  gap: spacing.sm,
-                  opacity: pressed ? 0.7 : 1,
-                  paddingHorizontal: spacing.md,
-                  paddingVertical: 10,
-                })}
-              >
-                <View
-                  style={{
-                    backgroundColor:
-                      selectedCategoryId === category.id ? brandColors.white : category.color,
-                    borderRadius: 999,
-                    height: 9,
-                    width: 9,
-                  }}
-                />
-                <Text
-                  style={{
-                    color: selectedCategoryId === category.id ? brandColors.white : colors.label,
-                    fontSize: 14,
-                    fontWeight: '700',
-                  }}
-                >
-                  {category.name}
-                </Text>
-              </Pressable>
+                selected={selectedCategoryId === category.id}
+              />
             ))}
           </View>
         )}
       </View>
 
       <View style={{ gap: spacing.md }}>
-        <View style={{ gap: spacing.xs }}>
-          <Text selectable style={{ color: colors.label, fontSize: 22, fontWeight: '800' }}>
-            Lugares para descubrir
-          </Text>
-          <Text selectable style={{ color: colors.secondaryLabel, fontSize: 14 }}>
-            {hasActiveFilters
-              ? 'Resultados del catálogo turístico de Manta'
-              : 'Una primera selección de playas, cultura y espacios de Manta'}
-          </Text>
+        <SectionHeading
+          description="La ubicación del teléfono se incorporará en la siguiente fase; por ahora usamos el centro de Manta."
+          title="Afina tu búsqueda"
+        />
+        <Text selectable style={{ color: colors.label, fontSize: 14, fontWeight: '800' }}>
+          Distancia
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          {distanceOptions.map((option) => (
+            <FilterChip
+              key={option.label}
+              label={option.label}
+              onPress={() => setMaximumDistance(option.value)}
+              selected={maximumDistance === option.value}
+            />
+          ))}
         </View>
+        <Text selectable style={{ color: colors.label, fontSize: 14, fontWeight: '800' }}>
+          Valoración mínima
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          {ratingOptions.map((option) => (
+            <FilterChip
+              key={option.label}
+              label={option.label}
+              onPress={() => setMinimumRating(option.value)}
+              selected={minimumRating === option.value}
+            />
+          ))}
+        </View>
+      </View>
 
-        {placesQuery.isPending ? (
-          <View style={{ alignItems: 'center', padding: spacing.xl }}>
-            <ActivityIndicator color={brandColors.primary} />
-          </View>
-        ) : placesQuery.isError ? (
-          <View style={{ gap: spacing.md }}>
-            <AuthNotice message="No pudimos consultar los lugares turísticos. Revisa tu conexión a internet." />
-            <RetryButton onPress={() => void placesQuery.refetch()} />
-          </View>
-        ) : placesQuery.data.length === 0 ? (
-          <StatusCard
-            title="Sin resultados"
-            description="Prueba otra búsqueda o selecciona una categoría diferente."
+      <View style={{ gap: spacing.md }}>
+        <SectionHeading
+          description="Sugerencias generadas por el motor de recomendaciones de MantaViews"
+          title="Recomendados para ti"
+        />
+        {recommendationsQuery.isPending ? (
+          <LoadingState label="Preparando recomendaciones…" />
+        ) : recommendationsQuery.isError ? (
+          <FeedbackState
+            actionLabel="Reintentar"
+            description="Las recomendaciones no están disponibles en este momento."
+            onAction={() => void recommendationsQuery.refetch()}
+            title="No pudimos recomendar lugares"
+            tone="error"
+          />
+        ) : recommendationsQuery.data.length === 0 ? (
+          <FeedbackState
+            description="Publica más lugares para alimentar el motor de recomendaciones."
+            title="Aún no hay recomendaciones"
           />
         ) : (
-          <View style={{ gap: spacing.md }}>
-            {placesQuery.data.map((place) => {
-              const category = categoriesQuery.data?.find(
-                (item) => item.id === place.categoryId || item.slug === place.categorySlug,
+          <ScrollView
+            contentContainerStyle={{ gap: spacing.md }}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          >
+            {recommendationsQuery.data.map((recommendation) => {
+              const category = categoryFor(recommendation);
+              return (
+                <RecommendationCard
+                  categoryColor={category?.color ?? recommendation.categoryColor}
+                  categoryName={category?.name ?? recommendation.categorySlug.replaceAll('-', ' ')}
+                  key={recommendation.id}
+                  recommendation={recommendation}
+                />
               );
-              const categoryName = category?.name ?? place.categorySlug.replaceAll('-', ' ');
-              const displayPlace = {
-                ...place,
-                categoryColor: category?.color ?? place.categoryColor,
-              };
-
-              return <PlaceCard categoryName={categoryName} key={place.id} place={displayPlace} />;
             })}
-          </View>
+          </ScrollView>
         )}
       </View>
 
       <View style={{ gap: spacing.md }}>
-        <StatusCard
-          title="Conexión cloud activa"
-          description={
-            categoriesQuery.data
-              ? `${categoriesQuery.data.length} categorías y ${placesQuery.data?.length ?? 0} lugares recibidos desde MantaViews.`
-              : 'Comprobando el catálogo público de MantaViews.'
-          }
+        <SectionHeading
+          description={`${visiblePlaces.length} de ${loadedPlaces.length} lugares cargados coinciden con tus filtros`}
+          title="Lugares para descubrir"
         />
-        <StatusCard
-          accent={brandColors.sun}
-          title="Recomendados para ti"
-          description="Las recomendaciones usarán tus intereses, valoraciones y cercanía sin guardar tu ubicación."
-        />
+
+        {placesQuery.isPending ? (
+          <LoadingState label="Buscando lugares para ti…" />
+        ) : placesQuery.isError ? (
+          <FeedbackState
+            actionLabel="Reintentar"
+            description="No pudimos consultar los lugares turísticos. Revisa tu conexión a internet."
+            onAction={() => void placesQuery.refetch()}
+            title="No pudimos cargar los lugares"
+            tone="error"
+          />
+        ) : visiblePlaces.length === 0 ? (
+          <FeedbackState
+            actionLabel={
+              placesQuery.hasNextPage && hasLocalFilters
+                ? 'Buscar en más resultados'
+                : 'Limpiar filtros'
+            }
+            description="Prueba otros filtros o amplía la búsqueda para encontrar más lugares."
+            onAction={() =>
+              placesQuery.hasNextPage && hasLocalFilters
+                ? void placesQuery.fetchNextPage()
+                : clearFilters()
+            }
+            title="Sin resultados visibles"
+          />
+        ) : (
+          <View style={{ gap: spacing.md }}>
+            {visiblePlaces.map((place) => {
+              const category = categoryFor(place);
+              return (
+                <PlaceCard
+                  categoryName={category?.name ?? place.categorySlug.replaceAll('-', ' ')}
+                  key={place.id}
+                  place={{
+                    ...place,
+                    categoryColor: category?.color ?? place.categoryColor,
+                  }}
+                />
+              );
+            })}
+            {placesQuery.hasNextPage ? (
+              <AppButton
+                label="Cargar más lugares"
+                loading={placesQuery.isFetchingNextPage}
+                onPress={() => void placesQuery.fetchNextPage()}
+                variant="secondary"
+              />
+            ) : (
+              <StatusCard
+                title="Has llegado al final"
+                description="Ya cargaste todos los lugares que coinciden con la búsqueda del catálogo."
+              />
+            )}
+          </View>
+        )}
       </View>
     </ScrollView>
   );
 }
 
-type RetryButtonProps = {
-  onPress: () => void;
-};
-
-function RetryButton({ onPress }: RetryButtonProps) {
+function SectionHeading({ description, title }: { description: string; title: string }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => ({
-        alignItems: 'center',
-        backgroundColor: brandColors.primary,
-        borderRadius: 14,
-        opacity: pressed ? 0.75 : 1,
-        padding: spacing.md,
-      })}
-    >
-      <Text selectable style={{ color: brandColors.white, fontWeight: '800' }}>
-        Reintentar
+    <View style={{ gap: spacing.xs }}>
+      <Text selectable style={{ color: colors.label, fontSize: 22, fontWeight: '800' }}>
+        {title}
       </Text>
-    </Pressable>
+      <Text selectable style={{ color: colors.secondaryLabel, fontSize: 14, lineHeight: 20 }}>
+        {description}
+      </Text>
+    </View>
   );
 }

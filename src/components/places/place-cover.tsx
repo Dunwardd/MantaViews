@@ -1,0 +1,61 @@
+import { Image } from 'expo-image';
+import { Text, View } from 'react-native';
+
+import { AppIcon } from '@/components/ui/app-icon';
+import { brandColors, colors, spacing } from '@/theme';
+
+type PlaceCoverProps = {
+  altText?: string | null;
+  categoryColor: string;
+  height?: number;
+  name: string;
+  url?: string | null;
+};
+
+export function PlaceCover({ altText, categoryColor, height = 176, name, url }: PlaceCoverProps) {
+  if (url) {
+    return (
+      <Image
+        accessibilityLabel={altText || `Fotografía de ${name}`}
+        contentFit="cover"
+        source={{ uri: url }}
+        style={{ backgroundColor: `${categoryColor}20`, height, width: '100%' }}
+        transition={180}
+      />
+    );
+  }
+
+  return (
+    <View
+      accessibilityLabel={`Vista ilustrada de ${name}`}
+      style={{
+        alignItems: 'center',
+        backgroundColor: `${categoryColor}20`,
+        gap: spacing.sm,
+        height,
+        justifyContent: 'center',
+        padding: spacing.lg,
+        width: '100%',
+      }}
+    >
+      <View
+        style={{
+          alignItems: 'center',
+          backgroundColor: colors.surface,
+          borderRadius: 999,
+          height: 58,
+          justifyContent: 'center',
+          width: 58,
+        }}
+      >
+        <AppIcon color={categoryColor || brandColors.primary} name="compass" size={30} />
+      </View>
+      <Text
+        numberOfLines={1}
+        style={{ color: brandColors.deepTeal, fontSize: 13, fontWeight: '800' }}
+      >
+        Descubre Manta
+      </Text>
+    </View>
+  );
+}

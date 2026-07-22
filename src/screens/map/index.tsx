@@ -1,17 +1,21 @@
 import { ScrollView } from 'react-native';
 
-import { StatusCard } from '@/components/ui/status-card';
-import { brandColors, colors, spacing } from '@/theme';
+import { FeedbackState } from '@/components/ui/feedback-state';
+import { colors, layout, spacing } from '@/theme';
 
 export function MapScreen() {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: spacing.lg }}
+      contentContainerStyle={{
+        alignSelf: 'center',
+        maxWidth: layout.contentMaxWidth,
+        padding: spacing.lg,
+        width: '100%',
+      }}
       style={{ backgroundColor: colors.background }}
     >
-      <StatusCard
-        accent={brandColors.ocean}
+      <FeedbackState
         title="Mapa de Manta"
         description="La base de navegación está lista. En la fase de mapas agregaremos ubicación, marcadores y rutas."
       />

@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '@/services/supabase/client';
+import { getSignedPlaceImageUrls } from '@/services/storage/image-service';
 
 export type CatalogLocale = 'es' | 'en';
 
@@ -25,12 +26,17 @@ type PlaceRow = {
 export type TourismPlace = {
   address: string;
   averageRating?: number;
+  coverImagePath?: string | null;
+  coverImageUrl?: string | null;
+  distanceMeters?: number;
   categoryColor: string;
   categoryId?: number;
   categorySlug: string;
   favoriteCount?: number;
   id: string;
   isFeatured: boolean;
+  latitude?: number;
+  longitude?: number;
   name: string;
   reviewCount?: number;
   shortDescription: string;
@@ -41,11 +47,33 @@ type SearchPlaceRow = {
   average_rating: number | string;
   category_id: number;
   category_slug: string;
+  cover_image_path: string | null;
   favorite_count: number | string;
+  latitude: number | string;
+  longitude: number | string;
   name: string;
   place_id: string;
   review_count: number | string;
   short_description: string;
+};
+
+type RecommendationRow = {
+  average_rating: number | string;
+  category_id: number;
+  category_slug: string;
+  cover_image_path: string | null;
+  latitude: number | string;
+  longitude: number | string;
+  name: string;
+  place_id: string;
+  recommendation_reason: string;
+  score: number | string;
+  short_description: string;
+};
+
+export type TourismRecommendation = TourismPlace & {
+  recommendationReason: string;
+  score: number;
 };
 
 export type PlaceDetail = {
@@ -63,6 +91,7 @@ export type PlaceDetail = {
     id: string;
     isCover: boolean;
     storagePath: string;
+    url: string | null;
   }[];
   isFeatured: boolean;
   latitude: number;
@@ -129,7 +158,7 @@ export async function searchTourismPlaces({
   locale = 'es',
   offset = 0,
   query = '',
-}: SearchTourismPlacesParams = {}) {
+}: SearchTourismPlacesParams = {}): Promise<TourismPlace[]> {
   const safeLimit = Math.min(Math.max(Math.trunc(limit), 1), 50);
   const safeOffset = Math.min(Math.max(Math.trunc(offset), 0), 10000);
   const safeQuery = query.trim().slice(0, 100);
@@ -143,15 +172,24 @@ export async function searchTourismPlaces({
 
   if (error) throw error;
 
-  return (data as SearchPlaceRow[]).map<TourismPlace>((place) => ({
+  const rows = data as SearchPlaceRow[];
+  const signedUrls = await getSignedPlaceImageUrls(
+    rows.flatMap((place) => (place.cover_image_path ? [place.cover_image_path] : [])),
+  );
+
+  return rows.map<TourismPlace>((place) => ({
     address: place.address,
     averageRating: Number(place.average_rating ?? 0),
     categoryColor: '#2FA7B0',
     categoryId: place.category_id,
     categorySlug: place.category_slug,
+    coverImagePath: place.cover_image_path,
+    coverImageUrl: place.cover_image_path ? (signedUrls.get(place.cover_image_path) ?? null) : null,
     favoriteCount: Number(place.favorite_count ?? 0),
     id: place.place_id,
     isFeatured: false,
+    latitude: Number(place.latitude),
+    longitude: Number(place.longitude),
     name: place.name,
     reviewCount: Number(place.review_count ?? 0),
     shortDescription: place.short_description,
@@ -167,5 +205,52 @@ export async function getPlaceDetail(placeId: string, locale: CatalogLocale = 'e
   if (error) throw error;
   if (!data) return null;
 
-  return data as PlaceDetail;
+  const place = data as PlaceDetail;
+  const signedUrls = await getSignedPlaceImageUrls(place.images.map((image) => image.storagePath));
+
+  return {
+    ...place,
+    images: place.images.map((image) => ({
+      ...image,
+      url: signedUrls.get(image.storagePath) ?? null,
+    })),
+  };
+}
+
+export async function getTourismRecommendations(
+  locale: CatalogLocale = 'es',
+  limit = 4,
+): Promise<TourismRecommendation[]> {
+  const safeLimit = Math.min(Math.max(Math.trunc(limit), 1), 12);
+  const { data, error } = await getSupabaseClient().rpc('get_recommendations', {
+    p_latitude: null,
+    p_limit: safeLimit,
+    p_locale: locale,
+    p_longitude: null,
+  });
+
+  if (error) throw error;
+
+  const rows = data as RecommendationRow[];
+  const signedUrls = await getSignedPlaceImageUrls(
+    rows.flatMap((place) => (place.cover_image_path ? [place.cover_image_path] : [])),
+  );
+
+  return rows.map<TourismRecommendation>((place) => ({
+    address: '',
+    averageRating: Number(place.average_rating ?? 0),
+    categoryColor: '#2FA7B0',
+    categoryId: place.category_id,
+    categorySlug: place.category_slug,
+    coverImagePath: place.cover_image_path,
+    coverImageUrl: place.cover_image_path ? (signedUrls.get(place.cover_image_path) ?? null) : null,
+    id: place.place_id,
+    isFeatured: true,
+    latitude: Number(place.latitude),
+    longitude: Number(place.longitude),
+    name: place.name,
+    recommendationReason: place.recommendation_reason,
+    score: Number(place.score ?? 0),
+    shortDescription: place.short_description,
+  }));
 }
