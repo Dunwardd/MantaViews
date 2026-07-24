@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '@/services/supabase/client';
+import { getSignedPlaceImageUrls } from '@/services/storage/image-service';
 import type { CatalogLocale, TourismPlace } from '@/services/catalog/place-service';
 
 export type UserReview = {
@@ -23,6 +24,11 @@ type FavoritePlaceRow = {
   id: string;
   is_featured: boolean;
   place_translations: { name: string; short_description: string }[];
+};
+
+type FavoriteCoverRow = {
+  place_id: string;
+  storage_path: string;
 };
 
 export async function getUserInterests(userId: string) {
@@ -64,24 +70,49 @@ export async function getFavoritePlaces(userId: string, locale: CatalogLocale = 
   const favoriteIds = await getFavoritePlaceIds(userId);
   if (favoriteIds.length === 0) return [];
 
-  const { data, error } = await getSupabaseClient()
-    .from('places')
-    .select(
-      'id, address, is_featured, place_translations!inner(locale, name, short_description), categories!inner(id, slug, color)',
-    )
-    .in('id', favoriteIds)
-    .eq('status', 'published')
-    .eq('place_translations.locale', locale);
-  if (error) throw error;
+  const supabase = getSupabaseClient();
+  const [placesResult, coversResult] = await Promise.all([
+    supabase
+      .from('places')
+      .select(
+        'id, address, is_featured, place_translations!inner(locale, name, short_description), categories!inner(id, slug, color)',
+      )
+      .in('id', favoriteIds)
+      .eq('status', 'published')
+      .eq('place_translations.locale', locale),
+    supabase
+      .from('place_images')
+      .select('place_id, storage_path')
+      .in('place_id', favoriteIds)
+      .eq('status', 'published')
+      .eq('is_cover', true),
+  ]);
+  if (placesResult.error) throw placesResult.error;
+  if (coversResult.error) throw coversResult.error;
 
-  return ((data ?? []) as FavoritePlaceRow[]).map((row): TourismPlace => {
+  const covers = (coversResult.data ?? []) as FavoriteCoverRow[];
+  const signedUrls = await getSignedPlaceImageUrls(covers.map((cover) => cover.storage_path));
+  const coverByPlaceId = new Map(
+    covers.map((cover) => [
+      cover.place_id,
+      {
+        path: cover.storage_path,
+        url: signedUrls.get(cover.storage_path) ?? null,
+      },
+    ]),
+  );
+
+  return ((placesResult.data ?? []) as FavoritePlaceRow[]).map((row): TourismPlace => {
     const category = Array.isArray(row.categories) ? row.categories[0] : row.categories;
     const translation = row.place_translations[0];
+    const cover = coverByPlaceId.get(row.id);
     return {
       address: row.address,
       categoryColor: category?.color ?? '#2FA7B0',
       categoryId: category?.id,
       categorySlug: category?.slug ?? 'actividades',
+      coverImagePath: cover?.path ?? null,
+      coverImageUrl: cover?.url ?? null,
       id: row.id,
       isFeatured: row.is_featured,
       name: translation?.name ?? 'Lugar turístico',

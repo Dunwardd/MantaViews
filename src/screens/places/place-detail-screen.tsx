@@ -16,6 +16,7 @@ import { FilterChip } from '@/components/ui/filter-chip';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useAuth } from '@/providers/auth-provider';
 import { useLocale } from '@/providers/locale-provider';
+import { useAppLocation } from '@/providers/location-provider';
 import { getPlaceDetail } from '@/services/catalog/place-service';
 import {
   archiveReview,
@@ -28,6 +29,10 @@ import {
   setFavorite,
 } from '@/services/community/community-service';
 import { getPublishedReviews } from '@/services/reviews/review-service';
+import {
+  buildGoogleMapsDestinationUrl,
+  buildGoogleMapsDirectionsUrl,
+} from '@/services/routes/external-navigation';
 import { uploadPendingPlaceImage } from '@/services/storage/image-service';
 import { pickCompressedImage } from '@/services/storage/media-picker';
 import { brandColors, colors, layout, spacing } from '@/theme';
@@ -47,6 +52,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
     ['other', t('detail.reportOther')],
   ] as const;
   const { user } = useAuth();
+  const { refreshLocation } = useAppLocation();
   const guard = useAuthGuard();
   const queryClient = useQueryClient();
   const returnTo = (placeId ? `/place/${placeId}` : '/(tabs)') as Href;
@@ -57,6 +63,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
   const [reportReason, setReportReason] = useState<
     'incorrect_information' | 'duplicate' | 'inappropriate' | 'spam' | 'other'
   >('incorrect_information');
+  const [isOpeningGoogleMaps, setIsOpeningGoogleMaps] = useState(false);
   const [actionNotice, setActionNotice] = useState<{
     message: string;
     tone: 'error' | 'success';
@@ -242,7 +249,7 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
     );
   }
 
-  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.latitude},${place.longitude}`;
+  const mapsUrl = buildGoogleMapsDestinationUrl(place);
   const coverImage = place.images.find((image) => image.isCover) ?? place.images[0];
   const visibleGallery = place.images.filter((image) => image.url);
   const hasOpeningHours = Object.keys(place.openingHours ?? {}).length > 0;
@@ -266,6 +273,22 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
     } catch (error) {
       if ((error as { name?: string })?.name === 'AbortError') return;
       setActionNotice({ message: t('detail.shareError'), tone: 'error' });
+    }
+  };
+
+  const openGoogleMaps = async () => {
+    if (isOpeningGoogleMaps) return;
+    setIsOpeningGoogleMaps(true);
+    try {
+      const currentOrigin = await refreshLocation();
+      await openExternalUrl(
+        buildGoogleMapsDirectionsUrl({
+          destination: place,
+          origin: currentOrigin,
+        }),
+      );
+    } finally {
+      setIsOpeningGoogleMaps(false);
     }
   };
 
@@ -466,7 +489,8 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
         <View style={{ flexGrow: 1, minWidth: 220 }}>
           <AppButton
             label={t('detail.googleRoute')}
-            onPress={() => void openExternalUrl(mapsUrl)}
+            loading={isOpeningGoogleMaps}
+            onPress={() => void openGoogleMaps()}
           />
         </View>
         {place.phone ? (

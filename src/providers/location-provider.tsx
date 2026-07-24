@@ -18,11 +18,12 @@ export type LocationPermissionState =
 type LocationContextValue = {
   isLocating: boolean;
   permissionState: LocationPermissionState;
-  refreshLocation: () => Promise<void>;
+  refreshLocation: () => Promise<RouteCoordinate | null>;
   userLocation: RouteCoordinate | null;
 };
 
 const LocationContext = createContext<LocationContextValue | null>(null);
+const MAX_ACCEPTABLE_ACCURACY_METERS = 1_500;
 
 export function LocationProvider({ children }: PropsWithChildren) {
   const [userLocation, setUserLocation] = useState<RouteCoordinate | null>(null);
@@ -30,7 +31,7 @@ export function LocationProvider({ children }: PropsWithChildren) {
   const [isLocating, setIsLocating] = useState(false);
   const requestedOnStart = useRef(false);
 
-  const refreshLocation = useCallback(async () => {
+  const refreshLocation = useCallback(async (): Promise<RouteCoordinate | null> => {
     setIsLocating(true);
 
     try {
@@ -39,29 +40,42 @@ export function LocationProvider({ children }: PropsWithChildren) {
         permission = await Location.requestForegroundPermissionsAsync();
       }
       if (!permission.granted) {
+        setUserLocation(null);
         setPermissionState(permission.canAskAgain ? 'denied' : 'blocked');
-        return;
+        return null;
       }
       if (!(await Location.hasServicesEnabledAsync())) {
+        setUserLocation(null);
         setPermissionState('services-disabled');
-        return;
+        return null;
       }
 
-      const lastKnown = await Location.getLastKnownPositionAsync({
-        maxAge: 120_000,
-        requiredAccuracy: 1_000,
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
       });
-      const location =
-        lastKnown ??
-        (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+      const accuracy = location.coords.accuracy;
+      if (
+        typeof accuracy !== 'number' ||
+        !Number.isFinite(accuracy) ||
+        accuracy > MAX_ACCEPTABLE_ACCURACY_METERS
+      ) {
+        setUserLocation(null);
+        setPermissionState('error');
+        return null;
+      }
 
-      setUserLocation({
+      const coordinate = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-      });
+      };
+
+      setUserLocation(coordinate);
       setPermissionState('granted');
+      return coordinate;
     } catch {
+      setUserLocation(null);
       setPermissionState('error');
+      return null;
     } finally {
       setIsLocating(false);
     }

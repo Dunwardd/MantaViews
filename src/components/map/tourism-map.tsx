@@ -150,14 +150,14 @@ export function TourismMap({
       return;
     }
 
-    if (userLocation) {
-      map.setView([userLocation.latitude, userLocation.longitude], 14, { animate: true });
-      return;
-    }
-
     const selectedPlace = places.find((place) => place.id === selectedPlaceId);
     if (selectedPlace) {
       map.panTo([selectedPlace.latitude, selectedPlace.longitude], { animate: true });
+      return;
+    }
+
+    if (userLocation) {
+      map.setView([userLocation.latitude, userLocation.longitude], 14, { animate: true });
     }
   }, [leaflet, places, routeCoordinates, selectedPlaceId, userLocation]);
 

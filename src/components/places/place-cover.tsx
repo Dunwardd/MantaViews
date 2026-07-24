@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/app-icon';
@@ -15,11 +16,19 @@ type PlaceCoverProps = {
 
 export function PlaceCover({ altText, categoryColor, height = 176, name, url }: PlaceCoverProps) {
   const { t } = useLocale();
-  if (url) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (url !== failedUrl) setFailedUrl(null);
+  }, [failedUrl, url]);
+
+  if (url && url !== failedUrl) {
     return (
       <Image
         accessibilityLabel={altText || `${t('places.photo')} ${name}`}
         contentFit="cover"
+        onError={() => setFailedUrl(url)}
+        recyclingKey={url}
         source={{ uri: url }}
         style={{ backgroundColor: `${categoryColor}20`, height, width: '100%' }}
         transition={180}

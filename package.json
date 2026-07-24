@@ -18,7 +18,8 @@
     "supabase:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
-    "db:lint": "supabase db lint --schema public --schema private --level warning"
+    "db:lint": "supabase db lint --schema public --schema private --level warning",
+    "images:ingest": "node scripts/ingest-place-covers.mjs"
   },
   "dependencies": {
     "@react-navigation/bottom-tabs": "^7.4.0",

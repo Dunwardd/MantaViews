@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 
 import { TourismMap } from '@/components/map/tourism-map';
+import { PlaceCover } from '@/components/places/place-cover';
 import { AppButton } from '@/components/ui/app-button';
 import { FeedbackState, LoadingState } from '@/components/ui/feedback-state';
 import { FilterChip } from '@/components/ui/filter-chip';
@@ -21,13 +22,14 @@ import {
   type RouteCoordinate,
   type RouteProfile,
 } from '@/services/routes/route-service';
+import { buildGoogleMapsDirectionsUrl } from '@/services/routes/external-navigation';
 import { brandColors, colors, layout, shadows, spacing } from '@/theme';
-import { MANTA_CENTER } from '@/utils/geo';
+import { isWithinManta, MANTA_CENTER } from '@/utils/geo';
 
 export function MapScreen() {
   const { locale, t } = useLocale();
   const { height: viewportHeight } = useWindowDimensions();
-  const { permissionState, userLocation } = useAppLocation();
+  const { permissionState, refreshLocation, userLocation } = useAppLocation();
   const routeProfiles: { label: string; value: RouteProfile }[] = [
     { label: t('map.walking'), value: 'foot-walking' },
     { label: t('map.driving'), value: 'driving-car' },
@@ -37,6 +39,7 @@ export function MapScreen() {
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [routeProfile, setRouteProfile] = useState<RouteProfile>('foot-walking');
   const [actionError, setActionError] = useState<string | null>(null);
+  const [isOpeningGoogleMaps, setIsOpeningGoogleMaps] = useState(false);
   const [mapOffsetY, setMapOffsetY] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const mapHeight = Math.max(500, Math.min(640, viewportHeight - 210));
@@ -49,8 +52,9 @@ export function MapScreen() {
     queryFn: () => searchTourismPlaces({ categoryId: selectedCategoryId, limit: 30, locale }),
     queryKey: ['public', 'map-places', locale, selectedCategoryId],
   });
+  const isUserWithinManta = userLocation !== null && isWithinManta(userLocation);
   const nearbyQuery = useQuery({
-    enabled: userLocation !== null,
+    enabled: isUserWithinManta,
     queryFn: () =>
       getNearbyTourismPlaces({
         categoryId: selectedCategoryId,
@@ -70,7 +74,7 @@ export function MapScreen() {
   });
   const routeMutation = useMutation({ mutationFn: getRoutePreview });
 
-  const sourcePlaces = userLocation ? nearbyQuery.data : catalogQuery.data;
+  const sourcePlaces = isUserWithinManta ? nearbyQuery.data : catalogQuery.data;
   const places = useMemo(
     () =>
       (sourcePlaces ?? []).filter(
@@ -80,8 +84,9 @@ export function MapScreen() {
     [sourcePlaces],
   );
   const selectedPlace = places.find((place) => place.id === selectedPlaceId) ?? null;
-  const routeOrigin =
-    userLocation && isWithinManta(userLocation) ? userLocation : (MANTA_CENTER as RouteCoordinate);
+  const routeOrigin = isUserWithinManta
+    ? userLocation
+    : (MANTA_CENTER as RouteCoordinate);
 
   const categoryFor = (place: TourismPlace) =>
     categoriesQuery.data?.find(
@@ -127,8 +132,25 @@ export function MapScreen() {
     }
   };
 
-  const placesPending = userLocation ? nearbyQuery.isPending : catalogQuery.isPending;
-  const placesError = userLocation ? nearbyQuery.isError : catalogQuery.isError;
+  const openGoogleMaps = async () => {
+    if (!selectedPlace || isOpeningGoogleMaps) return;
+    setIsOpeningGoogleMaps(true);
+    try {
+      const currentOrigin = await refreshLocation();
+      await openExternalUrl(
+        buildGoogleMapsDirectionsUrl({
+          destination: selectedPlace,
+          origin: currentOrigin,
+          profile: routeProfile,
+        }),
+      );
+    } finally {
+      setIsOpeningGoogleMaps(false);
+    }
+  };
+
+  const placesPending = isUserWithinManta ? nearbyQuery.isPending : catalogQuery.isPending;
+  const placesError = isUserWithinManta ? nearbyQuery.isError : catalogQuery.isError;
   const locationIssue =
     permissionState === 'blocked'
       ? t('map.permissionBlockedDescription')
@@ -256,7 +278,7 @@ export function MapScreen() {
             places={mapPlaces}
             routeCoordinates={routeMutation.data?.coordinates ?? []}
             selectedPlaceId={selectedPlaceId}
-            userLocation={userLocation}
+            userLocation={isUserWithinManta ? userLocation : null}
           />
 
           {selectedPlace ? (
@@ -278,6 +300,23 @@ export function MapScreen() {
               }}
             >
               <View style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.sm }}>
+                <View
+                  style={{
+                    borderRadius: 12,
+                    height: 64,
+                    overflow: 'hidden',
+                    width: 86,
+                  }}
+                >
+                  <PlaceCover
+                    categoryColor={
+                      categoryFor(selectedPlace)?.color ?? selectedPlace.categoryColor
+                    }
+                    height={64}
+                    name={selectedPlace.name}
+                    url={selectedPlace.coverImageUrl}
+                  />
+                </View>
                 <View
                   style={{
                     backgroundColor:
@@ -378,9 +417,8 @@ export function MapScreen() {
                 <View style={{ width: 170 }}>
                   <AppButton
                     label={t('map.openGoogle')}
-                    onPress={() =>
-                      void openExternalUrl(buildGoogleMapsUrl(selectedPlace, routeProfile))
-                    }
+                    loading={isOpeningGoogleMaps}
+                    onPress={() => void openGoogleMaps()}
                     variant="secondary"
                   />
                 </View>
@@ -468,21 +506,6 @@ function formatDuration(durationSeconds: number) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   return minutes > 0 ? `${hours} h ${minutes} min` : `${hours} h`;
-}
-
-function isWithinManta(coordinate: RouteCoordinate) {
-  return (
-    coordinate.latitude >= -1.2 &&
-    coordinate.latitude <= -0.8 &&
-    coordinate.longitude >= -81 &&
-    coordinate.longitude <= -80.5
-  );
-}
-
-function buildGoogleMapsUrl(place: { latitude: number; longitude: number }, profile: RouteProfile) {
-  const travelMode =
-    profile === 'driving-car' ? 'driving' : profile === 'cycling-regular' ? 'bicycling' : 'walking';
-  return `https://www.google.com/maps/dir/?api=1&destination=${place.latitude},${place.longitude}&travelmode=${travelMode}`;
 }
 
 function buildWazeUrl(place: { latitude: number; longitude: number }) {

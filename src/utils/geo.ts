@@ -10,6 +10,15 @@ type Coordinates = {
   longitude: number;
 };
 
+export function isWithinManta(coordinate: Coordinates) {
+  return (
+    coordinate.latitude >= -1.2 &&
+    coordinate.latitude <= -0.8 &&
+    coordinate.longitude >= -81 &&
+    coordinate.longitude <= -80.5
+  );
+}
+
 export function distanceInMeters(from: Coordinates, to: Coordinates) {
   const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
   const latitudeDelta = toRadians(to.latitude - from.latitude);
