@@ -4,6 +4,8 @@ export const es = {
   'common.close': 'Cerrar',
   'common.save': 'Guardar cambios',
   'common.loading': 'Cargando…',
+  'carousel.previous': 'Mover carrusel hacia atrás',
+  'carousel.next': 'Mover carrusel hacia adelante',
   'tabs.explore': 'Explorar',
   'tabs.map': 'Mapa',
   'tabs.favorites': 'Favoritos',

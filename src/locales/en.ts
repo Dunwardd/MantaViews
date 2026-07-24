@@ -6,6 +6,8 @@ export const en = {
   'common.close': 'Close',
   'common.save': 'Save changes',
   'common.loading': 'Loading…',
+  'carousel.previous': 'Move carousel backward',
+  'carousel.next': 'Move carousel forward',
   'tabs.explore': 'Explore',
   'tabs.map': 'Map',
   'tabs.favorites': 'Favorites',

@@ -1,7 +1,15 @@
 import { useInfiniteQuery, useQuery, type InfiniteData } from '@tanstack/react-query';
 import { Image } from 'expo-image';
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { PlaceCard } from '@/components/places/place-card';
 import { RecommendationCard } from '@/components/places/recommendation-card';
@@ -237,10 +245,9 @@ export function ExploreScreen() {
             tone="error"
           />
         ) : (
-          <ScrollView
-            contentContainerStyle={{ gap: spacing.sm, paddingRight: spacing.md }}
-            horizontal
-            showsHorizontalScrollIndicator={false}
+          <HorizontalCarousel
+            nextLabel={t('carousel.next')}
+            previousLabel={t('carousel.previous')}
           >
             <FilterChip
               label={t('explore.all')}
@@ -260,7 +267,7 @@ export function ExploreScreen() {
                 selected={selectedCategoryId === category.id}
               />
             ))}
-          </ScrollView>
+          </HorizontalCarousel>
         )}
       </View>
 
@@ -269,14 +276,12 @@ export function ExploreScreen() {
           description={t('explore.filtersDescription')}
           title={t('explore.filtersTitle')}
         />
-        <ScrollView
+        <HorizontalCarousel
           contentContainerStyle={{
             alignItems: 'center',
-            gap: spacing.sm,
-            paddingRight: spacing.md,
           }}
-          horizontal
-          showsHorizontalScrollIndicator={false}
+          nextLabel={t('carousel.next')}
+          previousLabel={t('carousel.previous')}
         >
           <Text selectable style={{ color: colors.label, fontSize: 13, fontWeight: '900' }}>
             {t('explore.distance')}
@@ -301,7 +306,7 @@ export function ExploreScreen() {
               selected={minimumRating === option.value}
             />
           ))}
-        </ScrollView>
+        </HorizontalCarousel>
       </View>
 
       <View style={{ gap: spacing.md }}>
@@ -431,5 +436,117 @@ function SectionHeading({ description, title }: { description: string; title: st
         {description}
       </Text>
     </View>
+  );
+}
+
+function HorizontalCarousel({
+  children,
+  contentContainerStyle,
+  nextLabel,
+  previousLabel,
+}: {
+  children: ReactNode;
+  contentContainerStyle?: StyleProp<ViewStyle>;
+  nextLabel: string;
+  previousLabel: string;
+}) {
+  const scrollRef = useRef<ScrollView>(null);
+  const [contentWidth, setContentWidth] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const isWeb = process.env.EXPO_OS === 'web';
+  const maximumOffset = Math.max(0, contentWidth - viewportWidth);
+  const canScroll = maximumOffset > 4;
+
+  const move = (direction: -1 | 1) => {
+    const distance = Math.max(240, viewportWidth * 0.72);
+    const nextOffset = Math.min(maximumOffset, Math.max(0, offset + direction * distance));
+    scrollRef.current?.scrollTo({ animated: true, x: nextOffset });
+    setOffset(nextOffset);
+  };
+
+  return (
+    <View style={{ position: 'relative' }}>
+      <ScrollView
+        contentContainerStyle={[
+          {
+            gap: spacing.sm,
+            paddingHorizontal: isWeb ? 52 : 0,
+            paddingRight: isWeb ? 52 : spacing.md,
+          },
+          contentContainerStyle,
+        ]}
+        horizontal
+        onContentSizeChange={(width) => setContentWidth(width)}
+        onLayout={(event) => setViewportWidth(event.nativeEvent.layout.width)}
+        onScroll={(event) => setOffset(event.nativeEvent.contentOffset.x)}
+        ref={scrollRef}
+        scrollEventThrottle={16}
+        showsHorizontalScrollIndicator={false}
+      >
+        {children}
+      </ScrollView>
+
+      {isWeb && canScroll ? (
+        <>
+          <CarouselArrow
+            direction="previous"
+            disabled={offset <= 4}
+            label={previousLabel}
+            onPress={() => move(-1)}
+          />
+          <CarouselArrow
+            direction="next"
+            disabled={offset >= maximumOffset - 4}
+            label={nextLabel}
+            onPress={() => move(1)}
+          />
+        </>
+      ) : null}
+    </View>
+  );
+}
+
+function CarouselArrow({
+  direction,
+  disabled,
+  label,
+  onPress,
+}: {
+  direction: 'previous' | 'next';
+  disabled: boolean;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      disabled={disabled}
+      onPress={onPress}
+      style={({ hovered, pressed }) => ({
+        alignItems: 'center',
+        backgroundColor: colors.surface,
+        borderColor: hovered && !disabled ? brandColors.primary : colors.separator,
+        borderRadius: 22,
+        borderWidth: 1,
+        boxShadow: '0 3px 10px rgba(0, 55, 61, 0.14)',
+        height: 42,
+        justifyContent: 'center',
+        left: direction === 'previous' ? 4 : undefined,
+        opacity: disabled ? 0.35 : pressed ? 0.72 : 1,
+        position: 'absolute',
+        right: direction === 'next' ? 4 : undefined,
+        top: 3,
+        width: 42,
+      })}
+    >
+      <Text
+        accessibilityElementsHidden
+        style={{ color: brandColors.deepTeal, fontSize: 30, fontWeight: '700', lineHeight: 32 }}
+      >
+        {direction === 'previous' ? '‹' : '›'}
+      </Text>
+    </Pressable>
   );
 }
