@@ -34,13 +34,55 @@ Deno.serve(async (request) => {
         : input.decision === 'reject'
           ? 'rejected'
           : 'archived';
+    const update: { is_cover?: boolean; status: string } = { status };
+
+    if (input.targetType === 'image') {
+      if (input.decision === 'publish') {
+        const { data: currentCover, error: coverError } = await client
+          .from('place_images')
+          .select('id')
+          .eq('place_id', before.place_id)
+          .eq('status', 'published')
+          .eq('is_cover', true)
+          .neq('id', input.targetId)
+          .limit(1)
+          .maybeSingle();
+        mapDatabaseError(coverError);
+        update.is_cover = currentCover === null;
+      } else if (before.is_cover) {
+        update.is_cover = false;
+      }
+    }
+
     const { data: after, error } = await client
       .from(table)
-      .update({ status })
+      .update(update)
       .eq('id', input.targetId)
       .select('*')
       .single();
     mapDatabaseError(error);
+
+    if (input.targetType === 'image' && input.decision !== 'publish' && before.is_cover) {
+      const { data: replacement, error: replacementError } = await client
+        .from('place_images')
+        .select('id')
+        .eq('place_id', before.place_id)
+        .eq('status', 'published')
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      mapDatabaseError(replacementError);
+
+      if (replacement) {
+        const { error: promoteError } = await client
+          .from('place_images')
+          .update({ is_cover: true })
+          .eq('id', replacement.id);
+        mapDatabaseError(promoteError);
+      }
+    }
+
     await writeAuditLog(
       client,
       user.id,

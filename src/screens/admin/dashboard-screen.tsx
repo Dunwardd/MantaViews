@@ -175,7 +175,12 @@ export function AdminDashboardScreen() {
       {section === 'moderation' ? (
         <ModerationSection
           items={moderationQuery.data ?? []}
-          onRefresh={() => refreshAdmin('moderation')}
+          onRefresh={async () => {
+            await Promise.all([
+              refreshAdmin('moderation'),
+              queryClient.invalidateQueries({ queryKey: ['public'] }),
+            ]);
+          }}
           query={moderationQuery}
         />
       ) : null}

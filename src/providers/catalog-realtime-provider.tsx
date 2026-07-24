@@ -15,8 +15,11 @@ export function CatalogRealtimeProvider({ children }: PropsWithChildren) {
     }
 
     const supabase = getSupabaseClient();
-    const refreshPublicCatalog = () => {
-      void queryClient.invalidateQueries({ queryKey: publicCatalogQueryKey });
+    const refreshCatalogImages = () => {
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: publicCatalogQueryKey }),
+        queryClient.invalidateQueries({ queryKey: ['private', 'favorites'] }),
+      ]);
     };
 
     const channel = supabase
@@ -28,17 +31,26 @@ export function CatalogRealtimeProvider({ children }: PropsWithChildren) {
           schema: 'public',
           table: 'places',
         },
-        refreshPublicCatalog,
+        refreshCatalogImages,
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'place_images',
+        },
+        refreshCatalogImages,
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          refreshPublicCatalog();
+          refreshCatalogImages();
         }
       });
 
     const appStateSubscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        refreshPublicCatalog();
+        refreshCatalogImages();
       }
     });
 
