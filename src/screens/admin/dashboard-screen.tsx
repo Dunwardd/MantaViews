@@ -619,6 +619,25 @@ function SuggestionsSection({
           <Text style={{ ...typography.heading, color: colors.label }}>{item.name}</Text>
           <Text style={{ color: colors.secondaryLabel }}>{item.address}</Text>
           <Text style={{ color: colors.label, lineHeight: 21 }}>{item.description}</Text>
+          <View
+            style={{
+              backgroundColor: colors.surfaceMuted,
+              borderRadius: 14,
+              gap: spacing.xs,
+              padding: spacing.sm,
+            }}
+          >
+            <Text style={{ ...typography.bodyStrong, color: colors.label }}>
+              Información en inglés
+            </Text>
+            <Text style={{ color: colors.secondaryLabel }}>
+              {item.name_en || 'Sin nombre en inglés; se usará el nombre en español.'}
+            </Text>
+            <Text style={{ color: colors.secondaryLabel, lineHeight: 20 }}>
+              {item.description_en ||
+                'Sin descripción en inglés; se usará la descripción en español.'}
+            </Text>
+          </View>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <AppButton
               disabled={mutation.isPending}

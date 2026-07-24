@@ -9,6 +9,7 @@ import {
   parseJson,
 } from '../_shared/http.ts';
 import { createAdminClient, requireAdmin } from '../_shared/supabase.ts';
+import { buildSuggestionTranslations } from '../_shared/suggestion-translations.ts';
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return optionsResponse();
@@ -47,14 +48,7 @@ Deno.serve(async (request) => {
       mapDatabaseError(placeError);
       placeId = place.id;
 
-      const shortDescription = suggestion.description.slice(0, 280);
-      const translations = ['es', 'en'].map((locale) => ({
-        description: suggestion.description,
-        locale,
-        name: suggestion.name,
-        place_id: place.id,
-        short_description: shortDescription,
-      }));
+      const translations = buildSuggestionTranslations(suggestion, place.id);
       const { error: translationError } = await client
         .from('place_translations')
         .insert(translations);

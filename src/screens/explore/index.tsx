@@ -25,6 +25,7 @@ import {
   searchTourismPlaces,
   type TourismPlace,
 } from '@/services/catalog/place-service';
+import { deduplicatePlacesById } from '@/services/catalog/pagination';
 import { brandColors, colors, layout, spacing } from '@/theme';
 import { distanceInMeters, MANTA_CENTER } from '@/utils/geo';
 
@@ -102,16 +103,18 @@ export function ExploreScreen() {
 
   const loadedPlaces = useMemo(
     () =>
-      (placesQuery.data?.pages.flat() ?? []).map<TourismPlace>((place) => ({
-        ...place,
-        distanceMeters:
-          place.latitude !== undefined && place.longitude !== undefined
-            ? distanceInMeters(MANTA_CENTER, {
-                latitude: place.latitude,
-                longitude: place.longitude,
-              })
-            : undefined,
-      })),
+      deduplicatePlacesById(placesQuery.data?.pages.flat() ?? []).map<TourismPlace>(
+        (place) => ({
+          ...place,
+          distanceMeters:
+            place.latitude !== undefined && place.longitude !== undefined
+              ? distanceInMeters(MANTA_CENTER, {
+                  latitude: place.latitude,
+                  longitude: place.longitude,
+                })
+              : undefined,
+        }),
+      ),
     [placesQuery.data],
   );
 

@@ -72,10 +72,12 @@ export const placeSuggestionSchema = z.object({
   address: z.string().trim().min(3).max(250),
   category_id: z.number().int().positive(),
   description: z.string().trim().min(20).max(1500),
+  description_en: z.string().trim().min(20).max(1500).nullable().optional(),
   evidence_url: z.string().url().startsWith('https://').nullable().optional(),
   latitude: mantaCoordinateSchema.shape.latitude,
   longitude: mantaCoordinateSchema.shape.longitude,
   name: z.string().trim().min(2).max(150),
+  name_en: z.string().trim().min(2).max(150).nullable().optional(),
   submitted_by: uuidSchema,
 });
 

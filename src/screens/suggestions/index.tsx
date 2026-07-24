@@ -20,6 +20,9 @@ export function SuggestionsScreen() {
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [includeEnglish, setIncludeEnglish] = useState(false);
+  const [nameEn, setNameEn] = useState('');
+  const [descriptionEn, setDescriptionEn] = useState('');
   const [address, setAddress] = useState('');
   const [latitude, setLatitude] = useState('-0.9538');
   const [longitude, setLongitude] = useState('-80.7324');
@@ -39,6 +42,12 @@ export function SuggestionsScreen() {
       if (!user || !categoryId) throw new Error(t('suggestions.selectCategory'));
       if (name.trim().length < 2 || description.trim().length < 20 || address.trim().length < 3)
         throw new Error(t('suggestions.incomplete'));
+      if (
+        includeEnglish &&
+        ((nameEn.trim().length > 0 && nameEn.trim().length < 2) ||
+          (descriptionEn.trim().length > 0 && descriptionEn.trim().length < 20))
+      )
+        throw new Error(t('suggestions.englishIncomplete'));
       const lat = Number(latitude);
       const lng = Number(longitude);
       if (
@@ -56,15 +65,20 @@ export function SuggestionsScreen() {
         address,
         categoryId,
         description,
+        descriptionEn: includeEnglish ? descriptionEn : undefined,
         evidenceUrl,
         latitude: lat,
         longitude: lng,
         name,
+        nameEn: includeEnglish ? nameEn : undefined,
       });
     },
     onSuccess: async () => {
       setName('');
       setDescription('');
+      setDescriptionEn('');
+      setIncludeEnglish(false);
+      setNameEn('');
       setAddress('');
       setEvidenceUrl('');
       await queryClient.invalidateQueries({ queryKey: ['private', 'suggestions', user?.id] });
@@ -102,6 +116,39 @@ export function SuggestionsScreen() {
         onChangeText={setDescription}
         value={description}
       />
+      <SurfaceCard>
+        <View style={{ gap: spacing.sm }}>
+          <Text selectable style={{ ...typography.bodyStrong, color: colors.label }}>
+            {t('suggestions.englishTitle')}
+          </Text>
+          <Text selectable style={{ color: colors.secondaryLabel, lineHeight: 20 }}>
+            {t('suggestions.englishHelp')}
+          </Text>
+          <FilterChip
+            label={t('suggestions.addEnglish')}
+            onPress={() => setIncludeEnglish((current) => !current)}
+            selected={includeEnglish}
+          />
+          {includeEnglish ? (
+            <>
+              <AppInput
+                autoCapitalize="words"
+                label={t('suggestions.nameEnglish')}
+                maxLength={150}
+                onChangeText={setNameEn}
+                value={nameEn}
+              />
+              <AppInput
+                label={t('suggestions.descriptionEnglish')}
+                maxLength={1500}
+                multiline
+                onChangeText={setDescriptionEn}
+                value={descriptionEn}
+              />
+            </>
+          ) : null}
+        </View>
+      </SurfaceCard>
       <AppInput
         label={t('suggestions.address')}
         maxLength={250}

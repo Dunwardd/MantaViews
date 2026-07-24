@@ -329,6 +329,12 @@ export const en = {
   'suggestions.loginRequired': 'Sign in to suggest places.',
   'suggestions.name': 'Name',
   'suggestions.description': 'Description',
+  'suggestions.englishTitle': 'Information in English (optional)',
+  'suggestions.englishHelp':
+    'You can translate the name, the description or both. Empty fields will use the Spanish text.',
+  'suggestions.addEnglish': 'Add information in English',
+  'suggestions.nameEnglish': 'Name in English (optional)',
+  'suggestions.descriptionEnglish': 'Description in English (optional)',
   'suggestions.address': 'Address',
   'suggestions.latitude': 'Latitude',
   'suggestions.longitude': 'Longitude',
@@ -343,6 +349,8 @@ export const en = {
   'suggestions.selectCategory': 'Select a category.',
   'suggestions.incomplete':
     'Complete the name, address and a description of at least 20 characters.',
+  'suggestions.englishIncomplete':
+    'The English name must have at least 2 characters and the description at least 20.',
   'suggestions.invalidCoordinates': 'The coordinates are not valid.',
   'suggestions.invalidEvidence': 'The evidence link must start with https://.',
   'suggestions.status': 'Status',

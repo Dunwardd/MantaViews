@@ -202,10 +202,12 @@ export async function createPlaceSuggestion(
     address: string;
     categoryId: number;
     description: string;
+    descriptionEn?: string;
     evidenceUrl?: string;
     latitude: number;
     longitude: number;
     name: string;
+    nameEn?: string;
   },
 ) {
   const { data, error } = await getSupabaseClient()
@@ -214,9 +216,11 @@ export async function createPlaceSuggestion(
       address: input.address.trim(),
       category_id: input.categoryId,
       description: input.description.trim(),
+      description_en: input.descriptionEn?.trim() || null,
       evidence_url: input.evidenceUrl?.trim() || null,
       location: `POINT(${input.longitude} ${input.latitude})`,
       name: input.name.trim(),
+      name_en: input.nameEn?.trim() || null,
       status: 'pending',
       submitted_by: userId,
     })

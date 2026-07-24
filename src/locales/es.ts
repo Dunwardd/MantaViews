@@ -339,6 +339,12 @@ export const es = {
   'suggestions.loginRequired': 'Inicia sesión para proponer lugares.',
   'suggestions.name': 'Nombre',
   'suggestions.description': 'Descripción',
+  'suggestions.englishTitle': 'Información en inglés (opcional)',
+  'suggestions.englishHelp':
+    'Puedes traducir el nombre, la descripción o ambos. Los campos vacíos usarán el texto en español.',
+  'suggestions.addEnglish': 'Añadir información en inglés',
+  'suggestions.nameEnglish': 'Nombre en inglés (opcional)',
+  'suggestions.descriptionEnglish': 'Descripción en inglés (opcional)',
   'suggestions.address': 'Dirección',
   'suggestions.latitude': 'Latitud',
   'suggestions.longitude': 'Longitud',
@@ -353,6 +359,8 @@ export const es = {
   'suggestions.selectCategory': 'Selecciona una categoría.',
   'suggestions.incomplete':
     'Completa el nombre, la dirección y una descripción de al menos 20 caracteres.',
+  'suggestions.englishIncomplete':
+    'El nombre en inglés debe tener al menos 2 caracteres y la descripción, al menos 20.',
   'suggestions.invalidCoordinates': 'Las coordenadas no son válidas.',
   'suggestions.invalidEvidence': 'La evidencia debe comenzar con https://.',
   'suggestions.status': 'Estado',

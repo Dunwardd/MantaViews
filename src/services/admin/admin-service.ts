@@ -29,8 +29,10 @@ export type AdminSuggestion = {
   categories: { slug: string } | { slug: string }[] | null;
   created_at: string;
   description: string;
+  description_en: string | null;
   id: string;
   name: string;
+  name_en: string | null;
   status: ContentStatus;
 };
 
@@ -113,7 +115,9 @@ export async function getAdminPlaces() {
 export async function getPendingSuggestions() {
   const { data, error } = await getSupabaseClient()
     .from('place_suggestions')
-    .select('id, name, description, address, status, created_at, categories(slug)')
+    .select(
+      'id, name, name_en, description, description_en, address, status, created_at, categories(slug)',
+    )
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
     .limit(50);
