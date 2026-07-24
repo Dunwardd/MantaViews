@@ -52,6 +52,31 @@ export async function removeOwnAvatar(path: string, userId: string) {
   if (error) throw error;
 }
 
+export async function uploadSuggestionImage({
+  bytes,
+  contentType,
+  extension,
+  userId,
+}: UploadImageInput) {
+  const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const path = `${userId}/suggestions/${uniqueName}.${extension}`;
+  const { error } = await getSupabaseClient().storage.from('place-images').upload(path, bytes, {
+    cacheControl: '3600',
+    contentType,
+    upsert: false,
+  });
+  if (error) throw error;
+  return path;
+}
+
+export async function removeOwnPlaceImage(path: string, userId: string) {
+  if (!path.startsWith(`${userId}/`)) {
+    throw new Error('La ruta de la imagen no pertenece al usuario actual.');
+  }
+  const { error } = await getSupabaseClient().storage.from('place-images').remove([path]);
+  if (error) throw error;
+}
+
 export async function uploadPendingPlaceImage({
   altText,
   bytes,

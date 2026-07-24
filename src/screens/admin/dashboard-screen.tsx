@@ -6,6 +6,7 @@ import { Alert, Platform, ScrollView, Text, View } from 'react-native';
 import { AdminCoordinateMap } from '@/components/admin/admin-coordinate-map';
 import { AuthNotice } from '@/components/auth/auth-notice';
 import { AppButton } from '@/components/ui/app-button';
+import { AppAvatar } from '@/components/ui/app-avatar';
 import { AppInput } from '@/components/ui/app-input';
 import { FeedbackState, LoadingState } from '@/components/ui/feedback-state';
 import { FilterChip } from '@/components/ui/filter-chip';
@@ -621,6 +622,14 @@ function SuggestionsSection({
     <View style={{ gap: spacing.sm }}>
       {items.map((item) => (
         <SurfaceCard key={item.id}>
+          {item.image_url ? (
+            <Image
+              accessibilityLabel={`Fotografía sugerida para ${item.name}`}
+              contentFit="cover"
+              source={{ uri: item.image_url }}
+              style={{ borderRadius: 16, height: 240, maxWidth: 520, width: '100%' }}
+            />
+          ) : null}
           <Text style={{ ...typography.heading, color: colors.label }}>{item.name}</Text>
           <Text style={{ color: colors.secondaryLabel }}>{item.address}</Text>
           <Text style={{ color: colors.label, lineHeight: 21 }}>{item.description}</Text>
@@ -797,15 +806,124 @@ function ReportsSection({
   if (!items.length)
     return <FeedbackState description="No hay reportes abiertos." title="Reportes al día" />;
   return (
-    <View style={{ gap: spacing.sm }}>
+    <View style={{ gap: spacing.md }}>
       {items.map((item) => (
-        <SurfaceCard key={item.id}>
-          <Text style={{ ...typography.bodyStrong, color: colors.label }}>
-            {item.target_type.toUpperCase()} · {item.reason.replaceAll('_', ' ')}
-          </Text>
-          <Text style={{ color: colors.secondaryLabel }}>
-            {item.details || 'Sin detalles adicionales'}
-          </Text>
+        <SurfaceCard key={item.id} style={{ gap: spacing.md }}>
+          <View
+            style={{
+              alignItems: 'flex-start',
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: spacing.sm,
+              justifyContent: 'space-between',
+            }}
+          >
+            <View style={{ flex: 1, gap: spacing.xs, minWidth: 240 }}>
+              <Text style={{ ...typography.heading, color: colors.label }}>
+                {reportReasonLabel(item.reason)}
+              </Text>
+              <Text style={{ color: colors.secondaryLabel }}>
+                {reportTargetLabel(item.target_type)} · {formatAdminDate(item.created_at)}
+              </Text>
+            </View>
+            <Text selectable style={{ color: colors.secondaryLabel, fontSize: 12 }}>
+              Reporte #{item.id.slice(0, 8)}
+            </Text>
+          </View>
+
+          <View
+            style={{
+              alignItems: 'center',
+              backgroundColor: colors.surfaceMuted,
+              borderRadius: 16,
+              flexDirection: 'row',
+              gap: spacing.sm,
+              padding: spacing.sm,
+            }}
+          >
+            <AppAvatar label={item.reporterName} size={48} uri={item.reporterAvatarUrl} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ color: colors.secondaryLabel, fontSize: 12 }}>Reportado por</Text>
+              <Text style={{ ...typography.bodyStrong, color: colors.label }}>
+                {item.reporterName}
+              </Text>
+              <Text selectable style={{ color: colors.secondaryLabel, fontSize: 12 }}>
+                Usuario #{item.reporterId.slice(0, 8)}
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={{
+              borderColor: colors.separator,
+              borderRadius: 18,
+              borderWidth: 1,
+              gap: spacing.sm,
+              padding: spacing.md,
+            }}
+          >
+            <Text style={{ ...typography.bodyStrong, color: brandColors.deepTeal }}>
+              Contenido reportado
+            </Text>
+            {item.target.imageUrl ? (
+              <Image
+                accessibilityLabel={item.target.title}
+                contentFit="cover"
+                source={{ uri: item.target.imageUrl }}
+                style={{ borderRadius: 14, height: 230, maxWidth: 520, width: '100%' }}
+              />
+            ) : null}
+            <Text style={{ ...typography.heading, color: colors.label }}>{item.target.title}</Text>
+            <Text style={{ color: colors.secondaryLabel }}>
+              {item.target.status ? statusLabel(item.target.status) : 'Contenido eliminado'} · ID #
+              {item.target_id.slice(0, 8)}
+            </Text>
+            {item.target.placeName && item.target.placeName !== item.target.title ? (
+              <Text style={{ color: colors.secondaryLabel }}>
+                Lugar relacionado: {item.target.placeName}
+              </Text>
+            ) : null}
+            {item.target.authorName ? (
+              <Text style={{ color: colors.secondaryLabel }}>
+                Autor del contenido: {item.target.authorName}
+              </Text>
+            ) : null}
+            {item.target.rating ? (
+              <Text style={{ color: brandColors.sun, fontWeight: '800' }}>
+                Calificación: {item.target.rating}/5
+              </Text>
+            ) : null}
+            {item.target.address ? (
+              <Text style={{ color: colors.secondaryLabel }}>Dirección: {item.target.address}</Text>
+            ) : null}
+            {item.target.body && item.target.body !== item.target.title ? (
+              <Text selectable style={{ color: colors.label, lineHeight: 21 }}>
+                {item.target.body}
+              </Text>
+            ) : null}
+            {item.target.createdAt ? (
+              <Text style={{ color: colors.secondaryLabel, fontSize: 12 }}>
+                Contenido creado: {formatAdminDate(item.target.createdAt)}
+              </Text>
+            ) : null}
+          </View>
+
+          <View
+            style={{
+              backgroundColor: brandColors.lightOcean,
+              borderRadius: 16,
+              gap: spacing.xs,
+              padding: spacing.md,
+            }}
+          >
+            <Text style={{ ...typography.bodyStrong, color: brandColors.deepTeal }}>
+              Detalles enviados por el usuario
+            </Text>
+            <Text selectable style={{ color: colors.label, lineHeight: 21 }}>
+              {item.details || 'El usuario no añadió una explicación adicional.'}
+            </Text>
+          </View>
+
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             <AppButton
               disabled={mutation.isPending}
@@ -863,6 +981,37 @@ function ReportsSection({
       ))}
     </View>
   );
+}
+
+function reportReasonLabel(reason: string) {
+  return (
+    (
+      {
+        duplicate: 'Contenido duplicado',
+        inappropriate: 'Contenido inapropiado',
+        incorrect_information: 'Información incorrecta',
+        other: 'Otro motivo',
+        spam: 'Spam',
+      } as Record<string, string>
+    )[reason] ?? reason.replaceAll('_', ' ')
+  );
+}
+
+function reportTargetLabel(targetType: 'image' | 'place' | 'review') {
+  return {
+    image: 'Fotografía',
+    place: 'Lugar',
+    review: 'Reseña',
+  }[targetType];
+}
+
+function formatAdminDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Fecha desconocida';
+  return new Intl.DateTimeFormat('es-EC', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
 }
 
 function Panel({ children, title }: { children: ReactNode; title: string }) {

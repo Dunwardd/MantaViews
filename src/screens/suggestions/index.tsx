@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
@@ -12,7 +13,10 @@ import { useAuth } from '@/providers/auth-provider';
 import { useLocale } from '@/providers/locale-provider';
 import { getTourismCategories } from '@/services/catalog/category-service';
 import { createPlaceSuggestion, getOwnSuggestions } from '@/services/community/community-service';
+import { pickCompressedImage, type PreparedImage } from '@/services/storage/media-picker';
 import { colors, layout, spacing, typography } from '@/theme';
+
+const MAX_SUGGESTION_PHOTO_BYTES = 5 * 1024 * 1024;
 
 export function SuggestionsScreen() {
   const { user } = useAuth();
@@ -28,6 +32,8 @@ export function SuggestionsScreen() {
   const [longitude, setLongitude] = useState('-80.7324');
   const [evidenceUrl, setEvidenceUrl] = useState('');
   const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [photo, setPhoto] = useState<PreparedImage | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const categoriesQuery = useQuery({
     queryFn: () => getTourismCategories(locale),
     queryKey: ['public', 'categories', locale],
@@ -61,6 +67,8 @@ export function SuggestionsScreen() {
         throw new Error(t('suggestions.invalidCoordinates'));
       if (evidenceUrl && !/^https:\/\//i.test(evidenceUrl.trim()))
         throw new Error(t('suggestions.invalidEvidence'));
+      if (photo && photo.bytes.byteLength > MAX_SUGGESTION_PHOTO_BYTES)
+        throw new Error(t('suggestions.photoTooLarge'));
       return createPlaceSuggestion(user.id, {
         address,
         categoryId,
@@ -71,6 +79,7 @@ export function SuggestionsScreen() {
         longitude: lng,
         name,
         nameEn: includeEnglish ? nameEn : undefined,
+        photo,
       });
     },
     onSuccess: async () => {
@@ -81,6 +90,8 @@ export function SuggestionsScreen() {
       setNameEn('');
       setAddress('');
       setEvidenceUrl('');
+      setPhoto(null);
+      setPhotoError(null);
       await queryClient.invalidateQueries({ queryKey: ['private', 'suggestions', user?.id] });
     },
   });
@@ -180,6 +191,54 @@ export function SuggestionsScreen() {
         onChangeText={setEvidenceUrl}
         value={evidenceUrl}
       />
+      <SurfaceCard>
+        <View style={{ gap: spacing.sm }}>
+          <Text selectable style={{ ...typography.bodyStrong, color: colors.label }}>
+            {t('suggestions.photoTitle')}
+          </Text>
+          <Text selectable style={{ color: colors.secondaryLabel, lineHeight: 20 }}>
+            {t('suggestions.photoHelp')}
+          </Text>
+          {photo ? (
+            <Image
+              accessibilityLabel={t('suggestions.photoPreview')}
+              contentFit="cover"
+              source={{ uri: photo.uri }}
+              style={{ borderRadius: 16, height: 220, width: '100%' }}
+            />
+          ) : null}
+          {photoError ? <AuthNotice message={photoError} /> : null}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            <AppButton
+              label={photo ? t('suggestions.changePhoto') : t('suggestions.choosePhoto')}
+              onPress={() => {
+                setPhotoError(null);
+                void pickCompressedImage()
+                  .then((image) => {
+                    if (!image) return;
+                    if (image.bytes.byteLength > MAX_SUGGESTION_PHOTO_BYTES) {
+                      setPhotoError(t('suggestions.photoTooLarge'));
+                      return;
+                    }
+                    setPhoto(image);
+                  })
+                  .catch((error: Error) => setPhotoError(error.message));
+              }}
+              variant="secondary"
+            />
+            {photo ? (
+              <AppButton
+                label={t('suggestions.removePhoto')}
+                onPress={() => {
+                  setPhoto(null);
+                  setPhotoError(null);
+                }}
+                variant="secondary"
+              />
+            ) : null}
+          </View>
+        </View>
+      </SurfaceCard>
       {categoriesQuery.isPending ? (
         <LoadingState label={t('suggestions.categoriesLoading')} />
       ) : (
@@ -211,6 +270,14 @@ export function SuggestionsScreen() {
       ) : suggestionsQuery.data?.length ? (
         suggestionsQuery.data.map((suggestion) => (
           <SurfaceCard key={suggestion.id}>
+            {suggestion.imageUrl ? (
+              <Image
+                accessibilityLabel={suggestion.name}
+                contentFit="cover"
+                source={{ uri: suggestion.imageUrl }}
+                style={{ borderRadius: 14, height: 160, width: '100%' }}
+              />
+            ) : null}
             <Text style={{ ...typography.bodyStrong, color: colors.label }}>{suggestion.name}</Text>
             <Text style={{ color: colors.secondaryLabel }}>
               {t('suggestions.status')}: {statusLabel(suggestion.status, t)}

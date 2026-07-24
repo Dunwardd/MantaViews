@@ -1,5 +1,10 @@
 import { getSupabaseClient } from '@/services/supabase/client';
-import { getSignedPlaceImageUrls } from '@/services/storage/image-service';
+import {
+  getSignedPlaceImageUrls,
+  removeOwnPlaceImage,
+  uploadSuggestionImage,
+} from '@/services/storage/image-service';
+import type { PreparedImage } from '@/services/storage/media-picker';
 import type { CatalogLocale, TourismPlace } from '@/services/catalog/place-service';
 
 export type UserReview = {
@@ -12,6 +17,7 @@ export type UserReview = {
 export type UserSuggestion = {
   createdAt: string;
   id: string;
+  imageUrl: string | null;
   name: string;
   reviewNotes: string | null;
   status: 'pending' | 'published' | 'rejected' | 'archived';
@@ -172,10 +178,7 @@ export async function archiveReview(userId: string, placeId: string) {
   if (error) throw error;
 }
 
-export async function getOwnTouristVote(
-  userId: string,
-  placeId: string,
-): Promise<boolean | null> {
+export async function getOwnTouristVote(userId: string, placeId: string): Promise<boolean | null> {
   const { data, error } = await getSupabaseClient()
     .from('tourist_votes')
     .select('is_touristic')
@@ -208,38 +211,58 @@ export async function createPlaceSuggestion(
     longitude: number;
     name: string;
     nameEn?: string;
+    photo?: PreparedImage | null;
   },
 ) {
-  const { data, error } = await getSupabaseClient()
-    .from('place_suggestions')
-    .insert({
-      address: input.address.trim(),
-      category_id: input.categoryId,
-      description: input.description.trim(),
-      description_en: input.descriptionEn?.trim() || null,
-      evidence_url: input.evidenceUrl?.trim() || null,
-      location: `POINT(${input.longitude} ${input.latitude})`,
-      name: input.name.trim(),
-      name_en: input.nameEn?.trim() || null,
-      status: 'pending',
-      submitted_by: userId,
-    })
-    .select('id')
-    .single();
-  if (error) throw error;
-  return data.id as string;
+  const supabase = getSupabaseClient();
+  let imageStoragePath: string | null = null;
+
+  try {
+    if (input.photo) {
+      imageStoragePath = await uploadSuggestionImage({ ...input.photo, userId });
+    }
+
+    const { data, error } = await supabase
+      .from('place_suggestions')
+      .insert({
+        address: input.address.trim(),
+        category_id: input.categoryId,
+        description: input.description.trim(),
+        description_en: input.descriptionEn?.trim() || null,
+        evidence_url: input.evidenceUrl?.trim() || null,
+        image_storage_path: imageStoragePath,
+        location: `POINT(${input.longitude} ${input.latitude})`,
+        name: input.name.trim(),
+        name_en: input.nameEn?.trim() || null,
+        status: 'pending',
+        submitted_by: userId,
+      })
+      .select('id')
+      .single();
+    if (error) throw error;
+    return data.id as string;
+  } catch (error) {
+    if (imageStoragePath) {
+      await removeOwnPlaceImage(imageStoragePath, userId).catch(() => undefined);
+    }
+    throw error;
+  }
 }
 
 export async function getOwnSuggestions(userId: string) {
   const { data, error } = await getSupabaseClient()
     .from('place_suggestions')
-    .select('id, name, status, review_notes, created_at')
+    .select('id, name, status, review_notes, created_at, image_storage_path')
     .eq('submitted_by', userId)
     .order('created_at', { ascending: false });
   if (error) throw error;
+  const signedUrls = await getSignedPlaceImageUrls(
+    (data ?? []).flatMap((row) => (row.image_storage_path ? [row.image_storage_path] : [])),
+  );
   return (data ?? []).map<UserSuggestion>((row) => ({
     createdAt: row.created_at,
     id: row.id,
+    imageUrl: row.image_storage_path ? (signedUrls.get(row.image_storage_path) ?? null) : null,
     name: row.name,
     reviewNotes: row.review_notes,
     status: row.status,

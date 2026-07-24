@@ -57,6 +57,21 @@ Deno.serve(async (request) => {
         mapDatabaseError(translationError);
       }
 
+      if (suggestion.image_storage_path) {
+        const { error: imageError } = await client.from('place_images').insert({
+          alt_text: `Fotografía de ${suggestion.name}`,
+          is_cover: true,
+          place_id: place.id,
+          status: 'published',
+          storage_path: suggestion.image_storage_path,
+          uploader_id: suggestion.submitted_by,
+        });
+        if (imageError) {
+          await client.from('places').delete().eq('id', place.id);
+          mapDatabaseError(imageError);
+        }
+      }
+
       const { error: publishError } = await client
         .from('places')
         .update({ status: 'published' })
@@ -71,6 +86,7 @@ Deno.serve(async (request) => {
     const { data: reviewed, error: updateError } = await client
       .from('place_suggestions')
       .update({
+        image_storage_path: input.decision === 'reject' ? null : suggestion.image_storage_path,
         review_notes: input.notes ?? null,
         reviewed_at: new Date().toISOString(),
         reviewed_by: user.id,
@@ -79,7 +95,15 @@ Deno.serve(async (request) => {
       .eq('id', input.suggestionId)
       .select('*')
       .single();
-    mapDatabaseError(updateError);
+    if (updateError) {
+      if (placeId) await client.from('places').delete().eq('id', placeId);
+      mapDatabaseError(updateError);
+    }
+
+    if (input.decision === 'reject' && suggestion.image_storage_path) {
+      await client.storage.from('place-images').remove([suggestion.image_storage_path]);
+    }
+
     await writeAuditLog(
       client,
       user.id,
