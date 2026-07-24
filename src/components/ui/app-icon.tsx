@@ -10,7 +10,8 @@ type AppIconName =
   | 'settings'
   | 'star'
   | 'warning'
-  | 'refresh';
+  | 'refresh'
+  | 'search';
 
 type AppIconProps = {
   color: string;
@@ -29,6 +30,7 @@ const symbols: Record<AppIconName, { sf: string; fallback: string }> = {
   star: { sf: 'star', fallback: '★' },
   warning: { sf: 'exclamationmark.triangle', fallback: '!' },
   refresh: { sf: 'arrow.clockwise', fallback: '↻' },
+  search: { sf: 'magnifyingglass', fallback: '⌕' },
 };
 
 export function AppIcon({ color, filled = false, name, size = 22 }: AppIconProps) {

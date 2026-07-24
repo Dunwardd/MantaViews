@@ -1,11 +1,20 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, type Href } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
-import { Linking, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Linking,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import { TourismMap } from '@/components/map/tourism-map';
 import { PlaceCover } from '@/components/places/place-cover';
 import { AppButton } from '@/components/ui/app-button';
+import { AppIcon } from '@/components/ui/app-icon';
 import { FeedbackState, LoadingState } from '@/components/ui/feedback-state';
 import { FilterChip } from '@/components/ui/filter-chip';
 import { RatingDisplay } from '@/components/ui/rating-display';
@@ -13,8 +22,7 @@ import { useLocale } from '@/providers/locale-provider';
 import { useAppLocation } from '@/providers/location-provider';
 import { getTourismCategories } from '@/services/catalog/category-service';
 import {
-  getNearbyTourismPlaces,
-  searchTourismPlaces,
+  getAllTourismPlaces,
   type TourismPlace,
 } from '@/services/catalog/place-service';
 import {
@@ -37,6 +45,9 @@ export function MapScreen() {
   ];
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [routeProfile, setRouteProfile] = useState<RouteProfile>('foot-walking');
   const [actionError, setActionError] = useState<string | null>(null);
   const [isOpeningGoogleMaps, setIsOpeningGoogleMaps] = useState(false);
@@ -44,44 +55,34 @@ export function MapScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const mapHeight = Math.max(500, Math.min(640, viewportHeight - 210));
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchText.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
   const categoriesQuery = useQuery({
     queryFn: () => getTourismCategories(locale),
     queryKey: ['public', 'categories', locale],
   });
   const catalogQuery = useQuery({
-    queryFn: () => searchTourismPlaces({ categoryId: selectedCategoryId, limit: 30, locale }),
-    queryKey: ['public', 'map-places', locale, selectedCategoryId],
+    queryFn: () =>
+      getAllTourismPlaces({
+        categoryId: selectedCategoryId,
+        locale,
+        query: debouncedSearch,
+      }),
+    queryKey: ['public', 'map-places', locale, selectedCategoryId, debouncedSearch],
   });
   const isUserWithinManta = userLocation !== null && isWithinManta(userLocation);
-  const nearbyQuery = useQuery({
-    enabled: isUserWithinManta,
-    queryFn: () =>
-      getNearbyTourismPlaces({
-        categoryId: selectedCategoryId,
-        latitude: (userLocation as RouteCoordinate).latitude,
-        locale,
-        longitude: (userLocation as RouteCoordinate).longitude,
-        radiusMeters: 15_000,
-      }),
-    queryKey: [
-      'public',
-      'nearby-places',
-      locale,
-      selectedCategoryId,
-      userLocation?.latitude,
-      userLocation?.longitude,
-    ],
-  });
   const routeMutation = useMutation({ mutationFn: getRoutePreview });
 
-  const sourcePlaces = isUserWithinManta ? nearbyQuery.data : catalogQuery.data;
   const places = useMemo(
     () =>
-      (sourcePlaces ?? []).filter(
+      (catalogQuery.data ?? []).filter(
         (place): place is TourismPlace & Required<Pick<TourismPlace, 'latitude' | 'longitude'>> =>
           place.latitude !== undefined && place.longitude !== undefined,
       ),
-    [sourcePlaces],
+    [catalogQuery.data],
   );
   const selectedPlace = places.find((place) => place.id === selectedPlaceId) ?? null;
   const routeOrigin = isUserWithinManta
@@ -149,8 +150,6 @@ export function MapScreen() {
     }
   };
 
-  const placesPending = isUserWithinManta ? nearbyQuery.isPending : catalogQuery.isPending;
-  const placesError = isUserWithinManta ? nearbyQuery.isError : catalogQuery.isError;
   const locationIssue =
     permissionState === 'blocked'
       ? t('map.permissionBlockedDescription')
@@ -175,18 +174,94 @@ export function MapScreen() {
       ref={scrollRef}
       style={{ backgroundColor: colors.background }}
     >
-      <View style={{ gap: 2 }}>
-        <Text selectable style={{ color: colors.label, fontSize: 18, fontWeight: '900' }}>
-          {t('map.screenTitle')}
-        </Text>
-        <Text
-          numberOfLines={1}
-          selectable
-          style={{ color: colors.secondaryLabel, fontSize: 12, lineHeight: 17 }}
+      <View style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.sm }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text selectable style={{ color: colors.label, fontSize: 18, fontWeight: '900' }}>
+            {t('map.screenTitle')}
+          </Text>
+          <Text
+            numberOfLines={1}
+            selectable
+            style={{ color: colors.secondaryLabel, fontSize: 12, lineHeight: 17 }}
+          >
+            {t('map.screenDescription')}
+          </Text>
+        </View>
+        <Pressable
+          accessibilityLabel={isSearchOpen ? t('map.closeSearch') : t('map.openSearch')}
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={() =>
+            setIsSearchOpen((current) => {
+              if (current) {
+                setSearchText('');
+                setDebouncedSearch('');
+              }
+              return !current;
+            })
+          }
+          style={({ pressed }) => ({
+            alignItems: 'center',
+            backgroundColor: isSearchOpen ? brandColors.lightOcean : colors.surface,
+            borderColor: isSearchOpen ? brandColors.primary : colors.separator,
+            borderRadius: 18,
+            borderWidth: 1,
+            height: 42,
+            justifyContent: 'center',
+            opacity: pressed ? 0.6 : 1,
+            width: 42,
+          })}
         >
-          {t('map.screenDescription')}
-        </Text>
+          <AppIcon color={brandColors.deepTeal} name="search" size={20} />
+        </Pressable>
       </View>
+
+      {isSearchOpen ? (
+        <View
+          style={{
+            alignItems: 'center',
+            backgroundColor: colors.surface,
+            borderColor: colors.separator,
+            borderRadius: 16,
+            borderWidth: 1,
+            flexDirection: 'row',
+            gap: spacing.sm,
+            minHeight: 48,
+            paddingHorizontal: spacing.md,
+          }}
+        >
+          <AppIcon color={colors.secondaryLabel} name="search" size={18} />
+          <TextInput
+            accessibilityLabel={t('map.searchLabel')}
+            autoCapitalize="sentences"
+            autoCorrect={false}
+            autoFocus
+            maxLength={100}
+            onChangeText={setSearchText}
+            placeholder={t('map.searchPlaceholder')}
+            placeholderTextColor={colors.secondaryLabel}
+            returnKeyType="search"
+            style={{ color: colors.label, flex: 1, fontSize: 15, minHeight: 46 }}
+            value={searchText}
+          />
+          {searchText ? (
+            <Pressable
+              accessibilityLabel={t('map.clearSearch')}
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => {
+                setSearchText('');
+                setDebouncedSearch('');
+              }}
+              style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1, padding: spacing.xs })}
+            >
+              <Text style={{ color: brandColors.primary, fontSize: 12, fontWeight: '900' }}>
+                {t('map.clear')}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
 
       {locationIssue ? (
         <View
@@ -251,13 +326,13 @@ export function MapScreen() {
         ))}
       </ScrollView>
 
-      {placesPending ? (
+      {catalogQuery.isPending ? (
         <LoadingState label={t('map.placesLoading')} />
-      ) : placesError ? (
+      ) : catalogQuery.isError ? (
         <FeedbackState
           actionLabel={t('common.retry')}
           description={t('map.unavailableDescription')}
-          onAction={() => void (userLocation ? nearbyQuery.refetch() : catalogQuery.refetch())}
+          onAction={() => void catalogQuery.refetch()}
           title={t('map.unavailableTitle')}
           tone="error"
         />

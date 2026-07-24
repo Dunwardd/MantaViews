@@ -56,6 +56,15 @@ Deno.serve(async (request) => {
         await client.from('places').delete().eq('id', place.id);
         mapDatabaseError(translationError);
       }
+
+      const { error: publishError } = await client
+        .from('places')
+        .update({ status: 'published' })
+        .eq('id', place.id);
+      if (publishError) {
+        await client.from('places').delete().eq('id', place.id);
+        mapDatabaseError(publishError);
+      }
     }
 
     const status = input.decision === 'approve' ? 'published' : 'rejected';

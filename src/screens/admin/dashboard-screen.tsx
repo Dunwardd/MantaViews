@@ -128,7 +128,12 @@ export function AdminDashboardScreen() {
       {section === 'suggestions' ? (
         <SuggestionsSection
           items={suggestionsQuery.data ?? []}
-          onRefresh={() => refreshAdmin('suggestions', 'places')}
+          onRefresh={async () => {
+            await Promise.all([
+              refreshAdmin('suggestions', 'places'),
+              queryClient.invalidateQueries({ queryKey: ['public'] }),
+            ]);
+          }}
           query={suggestionsQuery}
         />
       ) : null}

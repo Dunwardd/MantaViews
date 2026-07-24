@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '@/services/supabase/client';
 import { getSignedPlaceImageUrls } from '@/services/storage/image-service';
+import { collectAllPagesById } from '@/services/catalog/pagination';
 import { diversifyRecommendations } from '@/services/catalog/recommendation-algorithm';
 
 export type CatalogLocale = 'es' | 'en';
@@ -215,6 +216,19 @@ export async function searchTourismPlaces({
     reviewCount: Number(place.review_count ?? 0),
     shortDescription: place.short_description,
   }));
+}
+
+export function getAllTourismPlaces({
+  categoryId = null,
+  locale = 'es',
+  query = '',
+}: Pick<SearchTourismPlacesParams, 'categoryId' | 'locale' | 'query'> = {}) {
+  const pageSize = 50;
+  return collectAllPagesById({
+    fetchPage: (offset, limit) =>
+      searchTourismPlaces({ categoryId, limit, locale, offset, query }),
+    pageSize,
+  });
 }
 
 export async function getPlaceDetail(placeId: string, locale: CatalogLocale = 'es') {
