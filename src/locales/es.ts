@@ -297,6 +297,7 @@ export const es = {
   'profile.guestDescription':
     'Inicia sesión solo cuando quieras comentar, votar, guardar lugares o enviar sugerencias.',
   'profile.traveler': 'Viajero de Manta',
+  'profile.open': 'Abrir perfil',
   'profile.admin': 'Administrador de MantaViews',
   'profile.openAdmin': 'Abrir panel administrativo',
   'profile.loadError':

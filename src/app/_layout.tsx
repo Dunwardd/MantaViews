@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { AppBackButton } from '@/components/navigation/app-back-button';
+import { ProfileHeaderButton } from '@/components/navigation/profile-header-button';
 import { AppProviders } from '@/providers/app-providers';
 import { useLocale } from '@/providers/locale-provider';
 import { brandColors, colors } from '@/theme/colors';
@@ -34,6 +35,7 @@ function RootNavigation() {
       <Stack
         screenOptions={{
           headerBackButtonDisplayMode: 'minimal',
+          headerRight: () => <ProfileHeaderButton />,
           headerShadowVisible: false,
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: brandColors.deepTeal,

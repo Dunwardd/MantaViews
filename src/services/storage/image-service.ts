@@ -33,14 +33,23 @@ type UploadImageInput = {
 };
 
 export async function uploadAvatar({ bytes, contentType, extension, userId }: UploadImageInput) {
-  const path = `${userId}/avatar.${extension}`;
+  const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const path = `${userId}/avatar-${uniqueName}.${extension}`;
   const { error } = await getSupabaseClient().storage.from('avatars').upload(path, bytes, {
     cacheControl: '3600',
     contentType,
-    upsert: true,
+    upsert: false,
   });
   if (error) throw error;
   return path;
+}
+
+export async function removeOwnAvatar(path: string, userId: string) {
+  if (!path.startsWith(`${userId}/`)) {
+    throw new Error('La ruta del avatar no pertenece al usuario actual.');
+  }
+  const { error } = await getSupabaseClient().storage.from('avatars').remove([path]);
+  if (error) throw error;
 }
 
 export async function uploadPendingPlaceImage({

@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
-import { Text, View } from 'react-native';
+import { useState } from 'react';
+import { View } from 'react-native';
 
 import { useLocale } from '@/providers/locale-provider';
 import { brandColors, colors } from '@/theme';
@@ -12,21 +13,22 @@ type AppAvatarProps = {
 
 export function AppAvatar({ label, size = 48, uri }: AppAvatarProps) {
   const { t } = useLocale();
-  const initials =
-    label
-      .trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join('') || 'MV';
+  const [failedUri, setFailedUri] = useState<string | null>(null);
 
-  if (uri) {
+  if (uri && failedUri !== uri) {
     return (
       <Image
         accessibilityLabel={`${t('avatar.label')} ${label}`}
         contentFit="cover"
+        onError={() => setFailedUri(uri)}
         source={{ uri }}
-        style={{ borderRadius: size / 2, height: size, width: size }}
+        style={{
+          borderColor: colors.surface,
+          borderRadius: size / 2,
+          borderWidth: 2,
+          height: size,
+          width: size,
+        }}
       />
     );
   }
@@ -43,12 +45,29 @@ export function AppAvatar({ label, size = 48, uri }: AppAvatarProps) {
         borderWidth: 2,
         height: size,
         justifyContent: 'center',
+        overflow: 'hidden',
         width: size,
       }}
     >
-      <Text style={{ color: brandColors.deepTeal, fontSize: size * 0.34, fontWeight: '900' }}>
-        {initials}
-      </Text>
+      <View
+        style={{
+          backgroundColor: brandColors.deepTeal,
+          borderRadius: size * 0.14,
+          height: size * 0.28,
+          width: size * 0.28,
+        }}
+      />
+      <View
+        style={{
+          backgroundColor: brandColors.deepTeal,
+          borderTopLeftRadius: size * 0.3,
+          borderTopRightRadius: size * 0.3,
+          bottom: -size * 0.12,
+          height: size * 0.42,
+          position: 'absolute',
+          width: size * 0.7,
+        }}
+      />
     </View>
   );
 }

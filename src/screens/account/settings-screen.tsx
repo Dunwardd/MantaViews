@@ -14,7 +14,11 @@ import { useLocale } from '@/providers/locale-provider';
 import { getTourismCategories } from '@/services/catalog/category-service';
 import { getUserInterests, replaceUserInterests } from '@/services/community/community-service';
 import { getCurrentProfile, updateCurrentProfile } from '@/services/profiles/profile-service';
-import { getPublicAvatarUrl, uploadAvatar } from '@/services/storage/image-service';
+import {
+  getPublicAvatarUrl,
+  removeOwnAvatar,
+  uploadAvatar,
+} from '@/services/storage/image-service';
 import { pickCompressedImage, type PreparedImage } from '@/services/storage/media-picker';
 import { brandColors, colors, layout, spacing, typography } from '@/theme';
 
@@ -57,18 +61,35 @@ export function AccountSettingsScreen() {
       if (cleanName.length < 2 || cleanName.length > 80) {
         throw new Error(t('account.nameLength'));
       }
-      let avatarPath = profileQuery.data?.avatar_path ?? null;
-      if (avatar) avatarPath = await uploadAvatar({ ...avatar, userId: user.id });
-      await updateCurrentProfile(user.id, {
-        avatar_path: avatarPath,
-        display_name: cleanName,
-        preferred_language: locale,
-      });
+      const previousAvatarPath = profileQuery.data?.avatar_path ?? null;
+      const uploadedAvatarPath = avatar
+        ? await uploadAvatar({ ...avatar, userId: user.id })
+        : null;
+      const avatarPath = uploadedAvatarPath ?? previousAvatarPath;
+
+      try {
+        await updateCurrentProfile(user.id, {
+          avatar_path: avatarPath,
+          display_name: cleanName,
+          preferred_language: locale,
+        });
+      } catch (error) {
+        if (uploadedAvatarPath) {
+          await removeOwnAvatar(uploadedAvatarPath, user.id).catch(() => undefined);
+        }
+        throw error;
+      }
+
       await replaceUserInterests(user.id, selectedInterests);
+      if (uploadedAvatarPath && previousAvatarPath) {
+        await removeOwnAvatar(previousAvatarPath, user.id).catch(() => undefined);
+      }
     },
     onSuccess: async () => {
       setAvatar(null);
       setNotice(t('account.saved'));
+    },
+    onSettled: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['private', 'profile', user?.id] }),
         queryClient.invalidateQueries({ queryKey: ['private', 'interests', user?.id] }),

@@ -289,6 +289,7 @@ export const en = {
   'profile.guestDescription':
     'Sign in only when you want to comment, vote, save places or send suggestions.',
   'profile.traveler': 'Manta traveler',
+  'profile.open': 'Open profile',
   'profile.admin': 'MantaViews administrator',
   'profile.openAdmin': 'Open admin panel',
   'profile.loadError': 'Your session is active, but we could not load the profile. Try again.',

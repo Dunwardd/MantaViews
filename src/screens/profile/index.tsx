@@ -15,6 +15,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { useLocale } from '@/providers/locale-provider';
 import { getAuthErrorMessage } from '@/services/auth/auth-errors';
 import { getCurrentProfile, getCurrentUserIsAdmin } from '@/services/profiles/profile-service';
+import { getPublicAvatarUrl } from '@/services/storage/image-service';
 import { brandColors, colors, layout, spacing, typography } from '@/theme';
 
 export function ProfileScreen() {
@@ -130,7 +131,12 @@ export function ProfileScreen() {
         <AppAvatar
           label={profileQuery.data?.display_name ?? user.email ?? 'MantaViews'}
           size={64}
-          uri={null}
+          uri={
+            getPublicAvatarUrl(profileQuery.data?.avatar_path ?? null) ??
+            (typeof user.user_metadata.avatar_url === 'string'
+              ? user.user_metadata.avatar_url
+              : null)
+          }
         />
         <Text selectable style={{ ...typography.title, color: colors.label }}>
           {profileQuery.data?.display_name ??

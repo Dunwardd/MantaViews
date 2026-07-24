@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 
+import { ProfileHeaderButton } from '@/components/navigation/profile-header-button';
 import { AppIcon } from '@/components/ui/app-icon';
 import { useLocale } from '@/providers/locale-provider';
 import { brandColors, colors, typography } from '@/theme';
@@ -10,6 +11,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        headerRight: () => <ProfileHeaderButton />,
         headerStyle: { backgroundColor: colors.background },
         headerShadowVisible: false,
         headerTintColor: brandColors.deepTeal,
