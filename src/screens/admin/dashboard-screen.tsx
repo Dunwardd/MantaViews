@@ -40,6 +40,13 @@ const sectionOptions: { label: string; value: Section }[] = [
   { label: 'Reportes', value: 'reports' },
 ];
 
+function isPendingAction<TVariables>(
+  mutation: { isPending: boolean; variables?: TVariables },
+  matches: (variables: TVariables) => boolean,
+) {
+  return mutation.isPending && mutation.variables !== undefined && matches(mutation.variables);
+}
+
 export function AdminDashboardScreen() {
   const [section, setSection] = useState<Section>('summary');
   const queryClient = useQueryClient();
@@ -266,15 +273,23 @@ function PlacesSection({ onRefresh, places, query }: PlacesSectionProps) {
                 />
                 {place.status !== 'published' ? (
                   <AppButton
+                    disabled={actionMutation.isPending}
                     label="Publicar"
-                    loading={actionMutation.isPending}
+                    loading={isPendingAction(
+                      actionMutation,
+                      ({ action, id }) => action === 'publish' && id === place.id,
+                    )}
                     onPress={() => actionMutation.mutate({ action: 'publish', id: place.id })}
                   />
                 ) : null}
                 {place.status !== 'archived' ? (
                   <AppButton
+                    disabled={actionMutation.isPending}
                     label="Archivar"
-                    loading={actionMutation.isPending}
+                    loading={isPendingAction(
+                      actionMutation,
+                      ({ action, id }) => action === 'archive' && id === place.id,
+                    )}
                     onPress={() =>
                       confirmAction(
                         'Archivar lugar',
@@ -606,13 +621,21 @@ function SuggestionsSection({
           <Text style={{ color: colors.label, lineHeight: 21 }}>{item.description}</Text>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <AppButton
+              disabled={mutation.isPending}
               label="Aprobar"
-              loading={mutation.isPending}
+              loading={isPendingAction(
+                mutation,
+                ({ decision, id }) => decision === 'approve' && id === item.id,
+              )}
               onPress={() => mutation.mutate({ decision: 'approve', id: item.id })}
             />
             <AppButton
+              disabled={mutation.isPending}
               label="Rechazar"
-              loading={mutation.isPending}
+              loading={isPendingAction(
+                mutation,
+                ({ decision, id }) => decision === 'reject' && id === item.id,
+              )}
               onPress={() =>
                 confirmAction(
                   'Rechazar sugerencia',
@@ -675,16 +698,26 @@ function ModerationSection({
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             {item.type === 'image' ? (
               <AppButton
+                disabled={mutation.isPending}
                 label="Publicar"
-                loading={mutation.isPending}
+                loading={isPendingAction(
+                  mutation,
+                  ({ decision, id, type }) =>
+                    decision === 'publish' && id === item.id && type === item.type,
+                )}
                 onPress={() =>
                   mutation.mutate({ decision: 'publish', id: item.id, type: item.type })
                 }
               />
             ) : null}
             <AppButton
+              disabled={mutation.isPending}
               label="Rechazar"
-              loading={mutation.isPending}
+              loading={isPendingAction(
+                mutation,
+                ({ decision, id, type }) =>
+                  decision === 'reject' && id === item.id && type === item.type,
+              )}
               onPress={() =>
                 confirmAction('Rechazar contenido', 'El contenido dejará de ser visible.', () =>
                   mutation.mutate({ decision: 'reject', id: item.id, type: item.type }),
@@ -693,8 +726,13 @@ function ModerationSection({
               variant="danger"
             />
             <AppButton
+              disabled={mutation.isPending}
               label="Archivar"
-              loading={mutation.isPending}
+              loading={isPendingAction(
+                mutation,
+                ({ decision, id, type }) =>
+                  decision === 'archive' && id === item.id && type === item.type,
+              )}
               onPress={() =>
                 confirmAction('Archivar contenido', 'Esta acción es lógica y queda auditada.', () =>
                   mutation.mutate({ decision: 'archive', id: item.id, type: item.type }),
@@ -746,15 +784,25 @@ function ReportsSection({
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             <AppButton
+              disabled={mutation.isPending}
               label="Resolver"
-              loading={mutation.isPending}
+              loading={isPendingAction(
+                mutation,
+                ({ action, id, resolution }) =>
+                  action === 'none' && id === item.id && resolution === 'resolved',
+              )}
               onPress={() =>
                 mutation.mutate({ action: 'none', id: item.id, resolution: 'resolved' })
               }
             />
             <AppButton
+              disabled={mutation.isPending}
               label="Descartar"
-              loading={mutation.isPending}
+              loading={isPendingAction(
+                mutation,
+                ({ action, id, resolution }) =>
+                  action === 'none' && id === item.id && resolution === 'dismissed',
+              )}
               onPress={() =>
                 confirmAction(
                   'Descartar reporte',
@@ -765,8 +813,13 @@ function ReportsSection({
               variant="secondary"
             />
             <AppButton
+              disabled={mutation.isPending}
               label="Resolver y archivar contenido"
-              loading={mutation.isPending}
+              loading={isPendingAction(
+                mutation,
+                ({ action, id, resolution }) =>
+                  action === 'archive_target' && id === item.id && resolution === 'resolved',
+              )}
               onPress={() =>
                 confirmAction(
                   'Archivar contenido reportado',

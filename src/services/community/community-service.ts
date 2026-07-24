@@ -141,7 +141,10 @@ export async function archiveReview(userId: string, placeId: string) {
   if (error) throw error;
 }
 
-export async function getOwnTouristVote(userId: string, placeId: string) {
+export async function getOwnTouristVote(
+  userId: string,
+  placeId: string,
+): Promise<boolean | null> {
   const { data, error } = await getSupabaseClient()
     .from('tourist_votes')
     .select('is_touristic')
@@ -149,7 +152,7 @@ export async function getOwnTouristVote(userId: string, placeId: string) {
     .eq('place_id', placeId)
     .maybeSingle();
   if (error) throw error;
-  return data?.is_touristic as boolean | undefined;
+  return data?.is_touristic ?? null;
 }
 
 export async function saveTouristVote(userId: string, placeId: string, isTouristic: boolean) {
