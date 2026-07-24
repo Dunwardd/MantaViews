@@ -7,7 +7,7 @@ type AppButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   icon?: ReactNode;
   label: string;
   loading?: boolean;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-outline' | 'success' | 'ocean-outline';
 };
 
 export function AppButton({
@@ -32,6 +32,9 @@ export function AppButton({
     },
     ghost: { background: 'transparent', border: 'transparent', text: brandColors.primary },
     danger: { background: colors.error, border: colors.error, text: brandColors.white },
+    'danger-outline': { background: colors.surface, border: colors.error, text: colors.error },
+    success: { background: brandColors.lime, border: brandColors.lime, text: brandColors.deepTeal },
+    'ocean-outline': { background: colors.surface, border: brandColors.ocean, text: brandColors.ocean },
   }[variant];
 
   return (

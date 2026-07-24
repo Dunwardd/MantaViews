@@ -194,7 +194,7 @@ export function ProfileScreen() {
         label={t('profile.signOut')}
         loading={isSigningOut}
         onPress={confirmSignOut}
-        variant="secondary"
+        variant="danger"
       />
     </ScrollView>
   );

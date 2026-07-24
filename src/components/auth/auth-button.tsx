@@ -5,7 +5,7 @@ type AuthButtonProps = {
   label: string;
   loading?: boolean;
   onPress: () => void;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'danger';
 };
 
 export function AuthButton({

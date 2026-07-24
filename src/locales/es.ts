@@ -142,8 +142,8 @@ export const es = {
   'map.routeError': 'No pudimos calcular la ruta',
   'map.distanceMetric': 'Distancia',
   'map.durationMetric': 'Duración estimada',
-  'map.openGoogle': 'Abrir Google Maps',
-  'map.openWaze': 'Abrir Waze',
+  'map.openGoogle': 'Google Maps',
+  'map.openWaze': 'Waze',
   'map.openDetails': 'Ver ficha completa',
   'map.destinationTitle': 'Selecciona un destino',
   'map.destinationDescription':
@@ -173,7 +173,7 @@ export const es = {
   'detail.invalidPhone': 'El número de teléfono no es válido.',
   'detail.callError': 'No pudimos iniciar la llamada.',
   'detail.openLinkError': 'No pudimos abrir el enlace en este dispositivo.',
-  'detail.defaultPhotoDescription': 'Foto compartida por un visitante',
+  'detail.defaultPhotoDescription': 'Comparte una descripción de tu imagen',
   'detail.invalidTitle': 'Lugar no válido',
   'detail.invalidDescription': 'El enlace no contiene un identificador válido.',
   'detail.loading': 'Consultando el lugar en Supabase…',
@@ -253,14 +253,14 @@ export const es = {
   'explore.clearSearch': 'Limpiar búsqueda',
   'explore.clear': 'Limpiar',
   'explore.categoriesTitle': 'Explora por categoría',
-  'explore.categoriesDescription': 'Datos consultados en tiempo real desde Supabase Cloud',
+  'explore.categoriesDescription': '',
   'explore.categoriesLoading': 'Consultando categorías…',
   'explore.categoriesErrorTitle': 'Sin conexión al catálogo',
   'explore.categoriesErrorDescription':
     'No pudimos consultar las categorías. Revisa tu conexión a internet.',
   'explore.all': 'Todas',
-  'explore.filtersTitle': 'Afina tu búsqueda',
-  'explore.filtersDescription': 'Filtra por distancia desde el centro de Manta y valoración.',
+  'explore.filtersTitle': 'Filtra tu búsqueda',
+  'explore.filtersDescription': '',
   'explore.distance': 'Distancia',
   'explore.distance3': 'Hasta 3 km',
   'explore.distance8': 'Hasta 8 km',
@@ -272,7 +272,7 @@ export const es = {
   'explore.recommendationsUser':
     'Combina tus intereses, valoraciones, popularidad y diversidad de categorías.',
   'explore.recommendationsGuest':
-    'Selección popular y variada para explorar Manta sin crear una cuenta.',
+    'Selección popular y variada de lugares para explorar en Manta.',
   'explore.updateLocation': 'Actualizar mi ubicación',
   'explore.useLocation': 'Mejorar con mi ubicación',
   'explore.locationDenied':

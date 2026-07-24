@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import type { Href } from 'expo-router';
-import { useEffect, useState, type ReactNode } from 'react';
-import { Linking, Platform, ScrollView, Share, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { type ReactNode, useEffect, useState } from 'react';
+import { Linking, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
 
 import { AuthNotice } from '@/components/auth/auth-notice';
 import { PlaceCover } from '@/components/places/place-cover';
@@ -344,48 +345,20 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
         <MetricCard
+          iconColor={brandColors.sun}
+          iconName="star"
           label={t('detail.rating')}
           value={`${place.stats.averageRating.toFixed(1)} / 5`}
         />
-        <MetricCard label={t('detail.reviews')} value={String(place.stats.reviewCount)} />
-        <MetricCard label={t('detail.favorites')} value={String(place.stats.favoriteCount)} />
+        <MetricCard iconColor={brandColors.coral} iconName="pencil" label={t('detail.reviews')} value={String(place.stats.reviewCount)} />
+        <MetricCard iconName="heart" label={t('detail.favorites')} value={String(place.stats.favoriteCount)} />
         <MetricCard
+          iconColor={brandColors.ocean}
+          iconName="map"
           label={t('detail.touristic')}
           value={`${place.stats.touristicPercentage.toFixed(0)}%`}
         />
       </View>
-
-      <InformationSection title={t('detail.community')}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          <View style={{ flexGrow: 1, minWidth: 180 }}>
-            <AppButton
-              label={
-                favoriteIdsQuery.data?.includes(place.id)
-                  ? t('detail.removeFavorite')
-                  : t('detail.addFavorite')
-              }
-              loading={favoriteMutation.isPending}
-              onPress={() => guard(() => favoriteMutation.mutate(), returnTo)}
-              variant="secondary"
-            />
-          </View>
-          <FilterChip
-            color={brandColors.lime}
-            label={t('detail.touristic')}
-            onPress={() => guard(() => voteMutation.mutate(true), returnTo)}
-            selected={voteQuery.data === true}
-          />
-          <FilterChip
-            color={colors.error}
-            label={t('detail.notTouristic')}
-            onPress={() => guard(() => voteMutation.mutate(false), returnTo)}
-            selected={voteQuery.data === false}
-          />
-        </View>
-        {favoriteMutation.error || voteMutation.error ? (
-          <AuthNotice message={t('detail.actionError')} />
-        ) : null}
-      </InformationSection>
 
       <InformationSection title={t('detail.yourReview')}>
         <Text selectable style={{ color: colors.secondaryLabel, fontSize: 14 }}>
@@ -393,13 +366,20 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {[1, 2, 3, 4, 5].map((rating) => (
-            <FilterChip
-              color={brandColors.sun}
+            <Pressable
               key={rating}
-              label={`${rating} ★`}
               onPress={() => setReviewRating(rating)}
-              selected={reviewRating === rating}
-            />
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.7 : 1,
+                padding: spacing.xs,
+              })}
+            >
+              <Ionicons
+                color={brandColors.sun}
+                name={rating <= reviewRating ? 'star' : 'star-outline'}
+                size={32}
+              />
+            </Pressable>
           ))}
         </View>
         <AppInput
@@ -452,11 +432,53 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
           <AuthNotice message={(photoMutation.error as Error).message} />
         ) : null}
         <AppButton
+          icon={<Ionicons color="#ffffff" name="camera" size={18} />}
           label={t('detail.selectPhoto')}
           loading={photoMutation.isPending}
           onPress={() => guard(() => photoMutation.mutate(), returnTo)}
-          variant="secondary"
+          variant="primary"
         />
+      </InformationSection>
+
+      <InformationSection title={t('detail.community')}>
+        <View style={{ gap: spacing.sm }}>
+          <View style={{ width: '100%' }}>
+            <AppButton
+              icon={<Ionicons color="#ffffff" name="heart" size={18} />}
+              label={
+                favoriteIdsQuery.data?.includes(place.id)
+                  ? t('detail.removeFavorite')
+                  : t('detail.addFavorite')
+              }
+              loading={favoriteMutation.isPending}
+              onPress={() => guard(() => favoriteMutation.mutate(), returnTo)}
+              variant="primary"
+            />
+          </View>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <View style={{ flex: 1 }}>
+              <FilterChip
+                color={brandColors.lime}
+                fullWidth
+                label={t('detail.touristic')}
+                onPress={() => guard(() => voteMutation.mutate(true), returnTo)}
+                selected={voteQuery.data === true}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <FilterChip
+                color={colors.error}
+                fullWidth
+                label={t('detail.notTouristic')}
+                onPress={() => guard(() => voteMutation.mutate(false), returnTo)}
+                selected={voteQuery.data === false}
+              />
+            </View>
+          </View>
+        </View>
+        {favoriteMutation.error || voteMutation.error ? (
+          <AuthNotice message={t('detail.actionError')} />
+        ) : null}
       </InformationSection>
 
       <InformationSection title={t('detail.about')}>
@@ -615,7 +637,10 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
         )}
       </InformationSection>
 
-      <InformationSection title={t('detail.report')}>
+      <InformationSection
+        icon={<Ionicons color={colors.error} name="warning" size={24} />}
+        title={t('detail.report')}
+      >
         <Text selectable style={{ color: colors.secondaryLabel, fontSize: 14 }}>
           {t('detail.reportHelp')}
         </Text>
@@ -643,10 +668,11 @@ export function PlaceDetailScreen({ placeId }: PlaceDetailScreenProps) {
           <AuthNotice message={(reportMutation.error as Error).message} />
         ) : null}
         <AppButton
+          icon={<Ionicons color={colors.error} name="warning" size={18} />}
           label={t('detail.sendReport')}
           loading={reportMutation.isPending}
           onPress={() => guard(() => reportMutation.mutate(), returnTo)}
-          variant="secondary"
+          variant="danger-outline"
         />
       </InformationSection>
     </PageContainer>
@@ -702,7 +728,7 @@ function Badge({ label }: { label: string }) {
   );
 }
 
-function InformationSection({ children, title }: { children: ReactNode; title: string }) {
+function InformationSection({ children, title, icon }: { children: ReactNode; title: string; icon?: ReactNode }) {
   return (
     <View
       style={{
@@ -715,9 +741,12 @@ function InformationSection({ children, title }: { children: ReactNode; title: s
         padding: spacing.lg,
       }}
     >
-      <Text selectable style={{ color: colors.label, fontSize: 20, fontWeight: '800' }}>
-        {title}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        {icon}
+        <Text selectable style={{ color: colors.label, fontSize: 20, fontWeight: '800' }}>
+          {title}
+        </Text>
+      </View>
       {children}
     </View>
   );
@@ -736,7 +765,7 @@ function InformationRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+function MetricCard({ label, value, iconName, iconColor }: { label: string; value: string; iconName?: keyof typeof Ionicons.glyphMap; iconColor?: string }) {
   return (
     <View
       style={{
@@ -752,17 +781,20 @@ function MetricCard({ label, value }: { label: string; value: string }) {
         padding: spacing.md,
       }}
     >
-      <Text
-        selectable
-        style={{
-          color: brandColors.deepTeal,
-          fontSize: 20,
-          fontVariant: ['tabular-nums'],
-          fontWeight: '900',
-        }}
-      >
-        {value}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+        {iconName ? <Ionicons color={iconColor || brandColors.primary} name={iconName} size={20} /> : null}
+        <Text
+          selectable
+          style={{
+            color: brandColors.deepTeal,
+            fontSize: 20,
+            fontVariant: ['tabular-nums'],
+            fontWeight: '900',
+          }}
+        >
+          {value}
+        </Text>
+      </View>
       <Text selectable style={{ color: colors.secondaryLabel, fontSize: 13 }}>
         {label}
       </Text>

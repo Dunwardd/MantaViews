@@ -1,4 +1,5 @@
-import { Pressable, Text } from 'react-native';
+import type { ReactNode } from 'react';
+import { Pressable, Text, View } from 'react-native';
 
 import {
   brandColors,
@@ -12,6 +13,8 @@ import {
 
 type FilterChipProps = {
   color?: string;
+  fullWidth?: boolean;
+  icon?: ReactNode;
   label: string;
   onPress: () => void;
   selected?: boolean;
@@ -19,6 +22,8 @@ type FilterChipProps = {
 
 export function FilterChip({
   color = brandColors.primary,
+  fullWidth = false,
+  icon,
   label,
   onPress,
   selected,
@@ -33,7 +38,7 @@ export function FilterChip({
       onPress={onPress}
       style={({ pressed }) => ({
         alignItems: 'center',
-        alignSelf: 'flex-start',
+        alignSelf: fullWidth ? 'stretch' : 'flex-start',
         backgroundColor: selected ? color : colors.surface,
         borderColor: color,
         borderRadius: radii.pill,
@@ -44,16 +49,19 @@ export function FilterChip({
         paddingHorizontal: spacing.base,
       })}
     >
-      <Text
-        selectable
-        style={{
-          ...typography.caption,
-          color: selected ? selectedTextColor : colors.label,
-          fontWeight: '800',
-        }}
-      >
-        {label}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+        {icon}
+        <Text
+          selectable
+          style={{
+            ...typography.caption,
+            color: selected ? selectedTextColor : colors.label,
+            fontWeight: '800',
+          }}
+        >
+          {label}
+        </Text>
+      </View>
     </Pressable>
   );
 }

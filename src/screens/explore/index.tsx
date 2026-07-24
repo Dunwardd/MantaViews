@@ -1,5 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useInfiniteQuery, useQuery, type InfiniteData } from '@tanstack/react-query';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Pressable,
@@ -26,7 +28,7 @@ import {
   type TourismPlace,
 } from '@/services/catalog/place-service';
 import { deduplicatePlacesById } from '@/services/catalog/pagination';
-import { brandColors, colors, layout, spacing } from '@/theme';
+import { brandColors, colors, layout, shadows, spacing } from '@/theme';
 import { distanceInMeters, MANTA_CENTER } from '@/utils/geo';
 
 const PAGE_SIZE = 4;
@@ -183,53 +185,145 @@ export function ExploreScreen() {
         </View>
       </View>
 
-      <View style={{ gap: spacing.sm }}>
+      <View style={{ gap: spacing.sm, zIndex: 10 }}>
         <Text selectable style={{ color: colors.label, fontSize: 18, fontWeight: '800' }}>
           {t('explore.question')}
         </Text>
-        <View
-          style={{
-            alignItems: 'center',
-            backgroundColor: colors.surface,
-            borderColor: colors.separator,
-            borderCurve: 'continuous',
-            borderRadius: 18,
-            borderWidth: 1,
-            flexDirection: 'row',
-            gap: spacing.sm,
-            minHeight: 52,
-            paddingHorizontal: spacing.md,
-          }}
-        >
-          <Text accessibilityElementsHidden style={{ fontSize: 18 }}>
-            🔎
-          </Text>
-          <TextInput
-            accessibilityLabel={t('explore.searchLabel')}
-            autoCapitalize="sentences"
-            autoCorrect={false}
-            maxLength={100}
-            onChangeText={setSearchText}
-            placeholder={t('explore.searchPlaceholder')}
-            placeholderTextColor={colors.secondaryLabel}
-            returnKeyType="search"
-            style={{ color: colors.label, flex: 1, fontSize: 16, paddingVertical: spacing.md }}
-            value={searchText}
-          />
-          {searchText.length > 0 ? (
-            <Pressable
-              accessibilityLabel={t('explore.clearSearch')}
-              accessibilityRole="button"
-              hitSlop={10}
-              onPress={() => setSearchText('')}
-              style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1, padding: spacing.xs })}
+        <View style={{ position: 'relative', zIndex: 10 }}>
+          <View
+            style={{
+              alignItems: 'center',
+              backgroundColor: colors.surface,
+              borderColor: colors.separator,
+              borderCurve: 'continuous',
+              borderRadius: 18,
+              borderWidth: 1,
+              flexDirection: 'row',
+              gap: spacing.sm,
+              minHeight: 52,
+              paddingHorizontal: spacing.md,
+            }}
+          >
+            <Text accessibilityElementsHidden style={{ fontSize: 18 }}>
+              🔎
+            </Text>
+            <TextInput
+              accessibilityLabel={t('explore.searchLabel')}
+              autoCapitalize="sentences"
+              autoCorrect={false}
+              maxLength={100}
+              onChangeText={setSearchText}
+              placeholder={t('explore.searchPlaceholder')}
+              placeholderTextColor={colors.secondaryLabel}
+              returnKeyType="search"
+              style={{ color: colors.label, flex: 1, fontSize: 16, paddingVertical: spacing.md }}
+              value={searchText}
+            />
+            {searchText.length > 0 ? (
+              <Pressable
+                accessibilityLabel={t('explore.clearSearch')}
+                accessibilityRole="button"
+                hitSlop={10}
+                onPress={() => setSearchText('')}
+                style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1, padding: spacing.xs })}
+              >
+                <Ionicons color={brandColors.primary} name="close-circle" size={20} />
+              </Pressable>
+            ) : null}
+          </View>
+
+          {searchText.trim().length > 0 ? (
+            <View
+              style={{
+                position: 'absolute',
+                top: 60,
+                left: 0,
+                right: 0,
+                backgroundColor: colors.surface,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: colors.separator,
+                boxShadow: shadows.floating,
+                maxHeight: 280,
+                overflow: 'hidden',
+                zIndex: 1000,
+              }}
             >
-              <Text style={{ color: brandColors.primary, fontSize: 14, fontWeight: '800' }}>
-                {t('explore.clear')}
-              </Text>
-            </Pressable>
+              {placesQuery.isPending ? (
+                <View style={{ padding: spacing.lg, alignItems: 'center' }}>
+                  <Text style={{ color: colors.secondaryLabel }}>Cargando...</Text>
+                </View>
+              ) : visiblePlaces.length === 0 ? (
+                <View style={{ padding: spacing.lg, alignItems: 'center' }}>
+                  <Text style={{ color: colors.secondaryLabel }}>No encontramos lugares.</Text>
+                </View>
+              ) : (
+                <ScrollView keyboardShouldPersistTaps="handled">
+                  {visiblePlaces.slice(0, 5).map((place, index) => (
+                    <Pressable
+                      key={place.id}
+                      onPress={() => router.push(`/place/${place.id}` as any)}
+                      style={({ pressed }) => ({
+                        backgroundColor: pressed ? colors.background : 'transparent',
+                        borderBottomColor: colors.separator,
+                        borderBottomWidth: index === Math.min(visiblePlaces.length, 5) - 1 ? 0 : 1,
+                        padding: spacing.md,
+                      })}
+                    >
+                      <Text numberOfLines={1} style={{ color: colors.label, fontSize: 16, fontWeight: '700' }}>
+                        {place.name}
+                      </Text>
+                      <Text numberOfLines={1} style={{ color: colors.secondaryLabel, fontSize: 13, marginTop: 2 }}>
+                        {(categoryFor(place)?.name ?? place.categorySlug ?? '').toUpperCase()}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
           ) : null}
         </View>
+      </View>
+
+      <View style={{ gap: spacing.md }}>
+        <SectionHeading
+          description={user ? t('explore.recommendationsUser') : t('explore.recommendationsGuest')}
+          title={t('explore.recommendationsTitle')}
+        />
+        {recommendationsQuery.isPending ? (
+          <LoadingState label={t('explore.recommendationsLoading')} />
+        ) : recommendationsQuery.isError ? (
+          <FeedbackState
+            actionLabel={t('common.retry')}
+            description={t('explore.recommendationsErrorDescription')}
+            onAction={() => void recommendationsQuery.refetch()}
+            title={t('explore.recommendationsErrorTitle')}
+            tone="error"
+          />
+        ) : recommendationsQuery.data.length === 0 ? (
+          <FeedbackState
+            description={t('explore.recommendationsEmptyDescription')}
+            title={t('explore.recommendationsEmptyTitle')}
+          />
+        ) : (
+          <ScrollView
+            contentContainerStyle={{ gap: spacing.md }}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          >
+            {recommendationsQuery.data.map((recommendation) => {
+              const category = categoryFor(recommendation);
+              return (
+                <RecommendationCard
+                  categoryColor={category?.color ?? recommendation.categoryColor}
+                  categoryName={category?.name ?? recommendation.categorySlug.replaceAll('-', ' ')}
+                  key={recommendation.id}
+                  recommendation={recommendation}
+                />
+              );
+            })}
+          </ScrollView>
+        )}
       </View>
 
       <View style={{ gap: spacing.md }}>
@@ -297,7 +391,14 @@ export function ExploreScreen() {
               selected={maximumDistance === option.value}
             />
           ))}
-          <View style={{ backgroundColor: colors.separator, height: 28, width: 1 }} />
+        </HorizontalCarousel>
+        <HorizontalCarousel
+          contentContainerStyle={{
+            alignItems: 'center',
+          }}
+          nextLabel={t('carousel.next')}
+          previousLabel={t('carousel.previous')}
+        >
           <Text selectable style={{ color: colors.label, fontSize: 13, fontWeight: '900' }}>
             {t('explore.rating')}
           </Text>
@@ -310,47 +411,6 @@ export function ExploreScreen() {
             />
           ))}
         </HorizontalCarousel>
-      </View>
-
-      <View style={{ gap: spacing.md }}>
-        <SectionHeading
-          description={user ? t('explore.recommendationsUser') : t('explore.recommendationsGuest')}
-          title={t('explore.recommendationsTitle')}
-        />
-        {recommendationsQuery.isPending ? (
-          <LoadingState label={t('explore.recommendationsLoading')} />
-        ) : recommendationsQuery.isError ? (
-          <FeedbackState
-            actionLabel={t('common.retry')}
-            description={t('explore.recommendationsErrorDescription')}
-            onAction={() => void recommendationsQuery.refetch()}
-            title={t('explore.recommendationsErrorTitle')}
-            tone="error"
-          />
-        ) : recommendationsQuery.data.length === 0 ? (
-          <FeedbackState
-            description={t('explore.recommendationsEmptyDescription')}
-            title={t('explore.recommendationsEmptyTitle')}
-          />
-        ) : (
-          <ScrollView
-            contentContainerStyle={{ gap: spacing.md }}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-          >
-            {recommendationsQuery.data.map((recommendation) => {
-              const category = categoryFor(recommendation);
-              return (
-                <RecommendationCard
-                  categoryColor={category?.color ?? recommendation.categoryColor}
-                  categoryName={category?.name ?? recommendation.categorySlug.replaceAll('-', ' ')}
-                  key={recommendation.id}
-                  recommendation={recommendation}
-                />
-              );
-            })}
-          </ScrollView>
-        )}
       </View>
 
       <View style={{ gap: spacing.md }}>

@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, type Href } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -31,17 +32,17 @@ import {
   type RouteProfile,
 } from '@/services/routes/route-service';
 import { buildGoogleMapsDirectionsUrl } from '@/services/routes/external-navigation';
-import { brandColors, colors, layout, shadows, spacing } from '@/theme';
+import { brandColors, colors, getReadableTextColor, layout, shadows, spacing } from '@/theme';
 import { isWithinManta, MANTA_CENTER } from '@/utils/geo';
 
 export function MapScreen() {
   const { locale, t } = useLocale();
   const { height: viewportHeight } = useWindowDimensions();
   const { permissionState, refreshLocation, userLocation } = useAppLocation();
-  const routeProfiles: { label: string; value: RouteProfile }[] = [
-    { label: t('map.walking'), value: 'foot-walking' },
-    { label: t('map.driving'), value: 'driving-car' },
-    { label: t('map.cycling'), value: 'cycling-regular' },
+  const routeProfiles: { label: string; value: RouteProfile; iconName: keyof typeof Ionicons.glyphMap }[] = [
+    { label: t('map.walking'), value: 'foot-walking', iconName: 'walk' },
+    { label: t('map.driving'), value: 'driving-car', iconName: 'car' },
+    { label: t('map.cycling'), value: 'cycling-regular', iconName: 'bicycle' },
   ];
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
@@ -464,17 +465,27 @@ export function MapScreen() {
                 horizontal
                 showsHorizontalScrollIndicator={false}
               >
-                {routeProfiles.map((profile) => (
-                  <FilterChip
-                    key={profile.value}
-                    label={profile.label}
-                    onPress={() => {
-                      setRouteProfile(profile.value);
-                      routeMutation.reset();
-                    }}
-                    selected={routeProfile === profile.value}
-                  />
-                ))}
+                {routeProfiles.map((profile) => {
+                  const isSelected = routeProfile === profile.value;
+                  return (
+                    <FilterChip
+                      icon={
+                        <Ionicons
+                          color={isSelected ? getReadableTextColor(brandColors.primary) : colors.label}
+                          name={profile.iconName}
+                          size={16}
+                        />
+                      }
+                      key={profile.value}
+                      label={profile.label}
+                      onPress={() => {
+                        setRouteProfile(profile.value);
+                        routeMutation.reset();
+                      }}
+                      selected={isSelected}
+                    />
+                  );
+                })}
               </ScrollView>
 
               <ScrollView
@@ -491,17 +502,19 @@ export function MapScreen() {
                 </View>
                 <View style={{ width: 170 }}>
                   <AppButton
+                    icon={<Ionicons color={colors.error} name="location-outline" size={18} />}
                     label={t('map.openGoogle')}
                     loading={isOpeningGoogleMaps}
                     onPress={() => void openGoogleMaps()}
-                    variant="secondary"
+                    variant="danger-outline"
                   />
                 </View>
                 <View style={{ width: 130 }}>
                   <AppButton
+                    icon={<Ionicons color={brandColors.ocean} name="navigate-outline" size={18} />}
                     label={t('map.openWaze')}
                     onPress={() => void openExternalUrl(buildWazeUrl(selectedPlace))}
-                    variant="secondary"
+                    variant="ocean-outline"
                   />
                 </View>
                 <View style={{ width: 150 }}>
