@@ -3,6 +3,7 @@ import type { TranslationKey } from './es';
 export const en = {
   'common.retry': 'Try again',
   'common.cancel': 'Cancel',
+  'common.close': 'Close',
   'common.save': 'Save changes',
   'common.loading': 'Loading…',
   'tabs.explore': 'Explore',
@@ -109,7 +110,7 @@ export const en = {
   'map.real': 'Real map · OpenStreetMap',
   'map.loading': 'Loading the Manta map…',
   'map.error': 'We could not load the map. Check your connection and try again.',
-  'map.screenTitle': 'Explore Manta on the map',
+  'map.screenTitle': 'Explore Manta',
   'map.screenDescription': 'Select a marker to learn about the place or calculate a route.',
   'map.placesLoading': 'Locating tourism places…',
   'map.unavailableTitle': 'Map unavailable',
@@ -145,12 +146,13 @@ export const en = {
   'map.updateLocation': 'Update my location',
   'map.useLocation': 'Use my location',
   'map.permissionDeniedTitle': 'Permission not granted',
-  'map.permissionDeniedDescription': 'You can keep using the map without location or try again.',
+  'map.permissionDeniedDescription': 'You can keep using the map without location.',
   'map.permissionBlockedTitle': 'Permission blocked',
   'map.permissionBlockedDescription': 'The app cannot ask again. You can enable it in settings.',
   'map.openSettings': 'Open settings',
   'map.servicesDisabledTitle': 'Location disabled',
-  'map.servicesDisabledDescription': 'Enable device location and try again.',
+  'map.servicesDisabledDescription':
+    'Enable device location when convenient; the map remains available meanwhile.',
   'map.locationUnavailableTitle': 'We could not check location',
   'map.locationUnavailableDescription':
     'Location is temporarily unavailable. The catalog and routes from central Manta still work.',

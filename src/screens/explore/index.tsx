@@ -1,6 +1,5 @@
 import { useInfiniteQuery, useQuery, type InfiniteData } from '@tanstack/react-query';
 import { Image } from 'expo-image';
-import * as Location from 'expo-location';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
@@ -9,9 +8,9 @@ import { RecommendationCard } from '@/components/places/recommendation-card';
 import { AppButton } from '@/components/ui/app-button';
 import { FeedbackState, LoadingState } from '@/components/ui/feedback-state';
 import { FilterChip } from '@/components/ui/filter-chip';
-import { StatusCard } from '@/components/ui/status-card';
 import { useAuth } from '@/providers/auth-provider';
 import { useLocale } from '@/providers/locale-provider';
+import { useAppLocation } from '@/providers/location-provider';
 import { getTourismCategories } from '@/services/catalog/category-service';
 import {
   getTourismRecommendations,
@@ -37,17 +36,12 @@ export function ExploreScreen() {
     { label: t('explore.rating4'), value: 4 },
   ] as const;
   const { user } = useAuth();
+  const { userLocation } = useAppLocation();
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [maximumDistance, setMaximumDistance] = useState<number | null>(null);
   const [minimumRating, setMinimumRating] = useState(0);
-  const [recommendationLocation, setRecommendationLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
-  const [isLocatingRecommendations, setIsLocatingRecommendations] = useState(false);
-  const [locationNotice, setLocationNotice] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchText.trim()), 300);
@@ -60,49 +54,17 @@ export function ExploreScreen() {
   });
 
   const recommendationsQuery = useQuery({
-    queryFn: () => getTourismRecommendations(locale, 4, recommendationLocation),
+    queryFn: () => getTourismRecommendations(locale, 4, userLocation),
     queryKey: [
       'public',
       'recommendations',
       locale,
       user?.id ?? 'guest',
-      recommendationLocation?.latitude,
-      recommendationLocation?.longitude,
+      userLocation?.latitude,
+      userLocation?.longitude,
       4,
     ],
   });
-
-  const improveRecommendationsWithLocation = async () => {
-    if (isLocatingRecommendations) return;
-    setIsLocatingRecommendations(true);
-    setLocationNotice(null);
-    try {
-      let permission = await Location.getForegroundPermissionsAsync();
-      if (!permission.granted && permission.canAskAgain) {
-        permission = await Location.requestForegroundPermissionsAsync();
-      }
-      if (!permission.granted) {
-        setLocationNotice(t('explore.locationDenied'));
-        return;
-      }
-      const lastKnown = await Location.getLastKnownPositionAsync({
-        maxAge: 120_000,
-        requiredAccuracy: 1_000,
-      });
-      const current =
-        lastKnown ??
-        (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
-      setRecommendationLocation({
-        latitude: current.coords.latitude,
-        longitude: current.coords.longitude,
-      });
-      setLocationNotice(t('explore.locationUsed'));
-    } catch {
-      setLocationNotice(t('explore.locationError'));
-    } finally {
-      setIsLocatingRecommendations(false);
-    }
-  };
 
   const placesQuery = useInfiniteQuery<
     TourismPlace[],
@@ -171,9 +133,9 @@ export function ExploreScreen() {
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{
         alignSelf: 'center',
-        gap: spacing.xl,
+        gap: spacing.lg,
         maxWidth: layout.contentMaxWidth,
-        padding: spacing.lg,
+        padding: spacing.md,
         width: '100%',
       }}
       keyboardShouldPersistTaps="handled"
@@ -184,36 +146,34 @@ export function ExploreScreen() {
           alignItems: 'center',
           backgroundColor: brandColors.sand,
           borderCurve: 'continuous',
-          borderRadius: 28,
+          borderRadius: 20,
+          flexDirection: 'row',
           gap: spacing.md,
-          padding: spacing.xl,
+          padding: spacing.md,
         }}
       >
         <Image
           accessibilityLabel={t('explore.logo')}
           source={require('../../../assets/images/mantaviews-app-icon.png')}
           contentFit="contain"
-          style={{ borderRadius: 24, height: 150, width: 150 }}
+          style={{ borderRadius: 14, height: 68, width: 68 }}
         />
-        <Text selectable style={{ color: brandColors.deepTeal, fontSize: 30, fontWeight: '800' }}>
-          MantaViews
-        </Text>
-        <Text
-          selectable
-          style={{
-            color: colors.secondaryLabel,
-            fontSize: 16,
-            lineHeight: 24,
-            maxWidth: 420,
-            textAlign: 'center',
-          }}
-        >
-          {t('explore.hero')}
-        </Text>
+        <View style={{ flex: 1, gap: spacing.xs }}>
+          <Text selectable style={{ color: brandColors.deepTeal, fontSize: 22, fontWeight: '900' }}>
+            MantaViews
+          </Text>
+          <Text
+            numberOfLines={2}
+            selectable
+            style={{ color: colors.secondaryLabel, fontSize: 13, lineHeight: 18 }}
+          >
+            {t('explore.hero')}
+          </Text>
+        </View>
       </View>
 
       <View style={{ gap: spacing.sm }}>
-        <Text selectable style={{ color: colors.label, fontSize: 22, fontWeight: '800' }}>
+        <Text selectable style={{ color: colors.label, fontSize: 18, fontWeight: '800' }}>
           {t('explore.question')}
         </Text>
         <View
@@ -277,7 +237,11 @@ export function ExploreScreen() {
             tone="error"
           />
         ) : (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          <ScrollView
+            contentContainerStyle={{ gap: spacing.sm, paddingRight: spacing.md }}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          >
             <FilterChip
               label={t('explore.all')}
               onPress={() => setSelectedCategoryId(null)}
@@ -296,19 +260,27 @@ export function ExploreScreen() {
                 selected={selectedCategoryId === category.id}
               />
             ))}
-          </View>
+          </ScrollView>
         )}
       </View>
 
-      <View style={{ gap: spacing.md }}>
+      <View style={{ gap: spacing.sm }}>
         <SectionHeading
           description={t('explore.filtersDescription')}
           title={t('explore.filtersTitle')}
         />
-        <Text selectable style={{ color: colors.label, fontSize: 14, fontWeight: '800' }}>
-          {t('explore.distance')}
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        <ScrollView
+          contentContainerStyle={{
+            alignItems: 'center',
+            gap: spacing.sm,
+            paddingRight: spacing.md,
+          }}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+        >
+          <Text selectable style={{ color: colors.label, fontSize: 13, fontWeight: '900' }}>
+            {t('explore.distance')}
+          </Text>
           {distanceOptions.map((option) => (
             <FilterChip
               key={option.label}
@@ -317,11 +289,10 @@ export function ExploreScreen() {
               selected={maximumDistance === option.value}
             />
           ))}
-        </View>
-        <Text selectable style={{ color: colors.label, fontSize: 14, fontWeight: '800' }}>
-          {t('explore.rating')}
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          <View style={{ backgroundColor: colors.separator, height: 28, width: 1 }} />
+          <Text selectable style={{ color: colors.label, fontSize: 13, fontWeight: '900' }}>
+            {t('explore.rating')}
+          </Text>
           {ratingOptions.map((option) => (
             <FilterChip
               key={option.label}
@@ -330,7 +301,7 @@ export function ExploreScreen() {
               selected={minimumRating === option.value}
             />
           ))}
-        </View>
+        </ScrollView>
       </View>
 
       <View style={{ gap: spacing.md }}>
@@ -338,17 +309,6 @@ export function ExploreScreen() {
           description={user ? t('explore.recommendationsUser') : t('explore.recommendationsGuest')}
           title={t('explore.recommendationsTitle')}
         />
-        <AppButton
-          label={recommendationLocation ? t('explore.updateLocation') : t('explore.useLocation')}
-          loading={isLocatingRecommendations}
-          onPress={() => void improveRecommendationsWithLocation()}
-          variant="secondary"
-        />
-        {locationNotice ? (
-          <Text selectable style={{ color: colors.secondaryLabel, fontSize: 13 }}>
-            {locationNotice}
-          </Text>
-        ) : null}
         {recommendationsQuery.isPending ? (
           <LoadingState label={t('explore.recommendationsLoading')} />
         ) : recommendationsQuery.isError ? (
@@ -417,20 +377,27 @@ export function ExploreScreen() {
             title={t('explore.noResultsTitle')}
           />
         ) : (
-          <View style={{ gap: spacing.md }}>
-            {visiblePlaces.map((place) => {
-              const category = categoryFor(place);
-              return (
-                <PlaceCard
-                  categoryName={category?.name ?? place.categorySlug.replaceAll('-', ' ')}
-                  key={place.id}
-                  place={{
-                    ...place,
-                    categoryColor: category?.color ?? place.categoryColor,
-                  }}
-                />
-              );
-            })}
+          <View style={{ gap: spacing.sm }}>
+            <ScrollView
+              contentContainerStyle={{ gap: spacing.md, paddingRight: spacing.md }}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            >
+              {visiblePlaces.map((place) => {
+                const category = categoryFor(place);
+                return (
+                  <PlaceCard
+                    categoryName={category?.name ?? place.categorySlug.replaceAll('-', ' ')}
+                    compact
+                    key={place.id}
+                    place={{
+                      ...place,
+                      categoryColor: category?.color ?? place.categoryColor,
+                    }}
+                  />
+                );
+              })}
+            </ScrollView>
             {placesQuery.hasNextPage ? (
               <AppButton
                 label={t('explore.loadMore')}
@@ -439,7 +406,9 @@ export function ExploreScreen() {
                 variant="secondary"
               />
             ) : (
-              <StatusCard title={t('explore.endTitle')} description={t('explore.endDescription')} />
+              <Text selectable style={{ color: colors.secondaryLabel, fontSize: 12 }}>
+                {t('explore.endDescription')}
+              </Text>
             )}
           </View>
         )}
@@ -450,11 +419,15 @@ export function ExploreScreen() {
 
 function SectionHeading({ description, title }: { description: string; title: string }) {
   return (
-    <View style={{ gap: spacing.xs }}>
-      <Text selectable style={{ color: colors.label, fontSize: 22, fontWeight: '800' }}>
+    <View style={{ gap: 2 }}>
+      <Text selectable style={{ color: colors.label, fontSize: 18, fontWeight: '900' }}>
         {title}
       </Text>
-      <Text selectable style={{ color: colors.secondaryLabel, fontSize: 14, lineHeight: 20 }}>
+      <Text
+        numberOfLines={2}
+        selectable
+        style={{ color: colors.secondaryLabel, fontSize: 12, lineHeight: 17 }}
+      >
         {description}
       </Text>
     </View>

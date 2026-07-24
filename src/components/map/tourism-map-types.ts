@@ -7,6 +7,7 @@ export type TourismMapPlace = RouteCoordinate & {
 };
 
 export type TourismMapProps = {
+  height?: number;
   onSelectPlace: (placeId: string) => void;
   places: TourismMapPlace[];
   routeCoordinates: RouteCoordinate[];

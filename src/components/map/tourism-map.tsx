@@ -16,6 +16,7 @@ type LeafletModule = typeof import('leaflet');
 type MapStatus = 'error' | 'loading' | 'ready';
 
 export function TourismMap({
+  height = 420,
   onSelectPlace,
   places,
   routeCoordinates,
@@ -168,7 +169,7 @@ export function TourismMap({
         backgroundColor: '#DDF2F2',
         border: `1px solid ${colors.separator}`,
         borderRadius: 24,
-        height: 420,
+        height,
         overflow: 'hidden',
         position: 'relative',
         width: '100%',

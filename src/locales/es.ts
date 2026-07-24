@@ -1,6 +1,7 @@
 export const es = {
   'common.retry': 'Reintentar',
   'common.cancel': 'Cancelar',
+  'common.close': 'Cerrar',
   'common.save': 'Guardar cambios',
   'common.loading': 'Cargando…',
   'tabs.explore': 'Explorar',
@@ -108,7 +109,7 @@ export const es = {
   'map.real': 'Mapa real · OpenStreetMap',
   'map.loading': 'Cargando mapa de Manta…',
   'map.error': 'No pudimos cargar el mapa. Revisa tu conexión e inténtalo nuevamente.',
-  'map.screenTitle': 'Explora Manta en el mapa',
+  'map.screenTitle': 'Explora Manta',
   'map.screenDescription': 'Selecciona un marcador para conocer el lugar o calcular una ruta.',
   'map.placesLoading': 'Ubicando lugares turísticos…',
   'map.unavailableTitle': 'Mapa no disponible',
@@ -146,14 +147,14 @@ export const es = {
   'map.updateLocation': 'Actualizar mi ubicación',
   'map.useLocation': 'Usar mi ubicación',
   'map.permissionDeniedTitle': 'Permiso no concedido',
-  'map.permissionDeniedDescription':
-    'Puedes continuar usando el mapa sin ubicación o volver a intentar cuando quieras.',
+  'map.permissionDeniedDescription': 'Puedes continuar usando el mapa sin ubicación.',
   'map.permissionBlockedTitle': 'Permiso bloqueado',
   'map.permissionBlockedDescription':
     'El sistema ya no permite solicitarlo desde la app. Puedes activarlo manualmente.',
   'map.openSettings': 'Abrir ajustes',
   'map.servicesDisabledTitle': 'Ubicación desactivada',
-  'map.servicesDisabledDescription': 'Activa la ubicación del dispositivo y vuelve a intentarlo.',
+  'map.servicesDisabledDescription':
+    'Activa la ubicación del dispositivo; el mapa seguirá disponible mientras tanto.',
   'map.locationUnavailableTitle': 'No pudimos consultar la ubicación',
   'map.locationUnavailableDescription':
     'La ubicación no está disponible por el momento. El catálogo y las rutas desde el centro de Manta siguen funcionando.',

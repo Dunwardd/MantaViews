@@ -28,21 +28,21 @@ export function RecommendationCard({
         style={({ pressed }) => ({
           backgroundColor: colors.surface,
           borderColor: colors.separator,
-          borderRadius: 22,
+          borderRadius: 18,
           borderWidth: 1,
-          minWidth: 270,
+          minWidth: 232,
           opacity: pressed ? 0.82 : 1,
           overflow: 'hidden',
-          width: 300,
+          width: 248,
         })}
       >
         <PlaceCover
           categoryColor={categoryColor}
-          height={148}
+          height={112}
           name={recommendation.name}
           url={recommendation.coverImageUrl}
         />
-        <View style={{ gap: spacing.sm, padding: spacing.base }}>
+        <View style={{ gap: spacing.sm, padding: spacing.md }}>
           <View style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.sm }}>
             <View
               style={{ backgroundColor: categoryColor, borderRadius: 999, height: 9, width: 9 }}
@@ -51,14 +51,8 @@ export function RecommendationCard({
               {categoryName.toUpperCase()}
             </Text>
           </View>
-          <Text numberOfLines={2} style={{ color: colors.label, fontSize: 19, fontWeight: '900' }}>
+          <Text numberOfLines={1} style={{ color: colors.label, fontSize: 17, fontWeight: '900' }}>
             {recommendation.name}
-          </Text>
-          <Text
-            numberOfLines={2}
-            style={{ color: colors.secondaryLabel, fontSize: 13, lineHeight: 19 }}
-          >
-            {recommendation.shortDescription}
           </Text>
           <RatingDisplay value={recommendation.averageRating ?? 0} />
           <View
@@ -66,11 +60,14 @@ export function RecommendationCard({
               alignSelf: 'flex-start',
               backgroundColor: brandColors.sand,
               borderRadius: 999,
-              paddingHorizontal: spacing.md,
-              paddingVertical: spacing.sm,
+              paddingHorizontal: spacing.sm,
+              paddingVertical: spacing.xs,
             }}
           >
-            <Text style={{ color: brandColors.deepTeal, fontSize: 12, fontWeight: '800' }}>
+            <Text
+              numberOfLines={1}
+              style={{ color: brandColors.deepTeal, fontSize: 11, fontWeight: '800' }}
+            >
               {recommendation.recommendationReason}
             </Text>
           </View>

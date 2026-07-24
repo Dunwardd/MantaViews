@@ -4,6 +4,7 @@ import type { PropsWithChildren } from 'react';
 import { GlobalErrorBoundary } from '@/components/ui/global-error-boundary';
 import { AuthProvider } from '@/providers/auth-provider';
 import { LocaleProvider } from '@/providers/locale-provider';
+import { LocationProvider } from '@/providers/location-provider';
 import { queryClient } from '@/services/query/query-client';
 
 export function AppProviders({ children }: PropsWithChildren) {
@@ -11,7 +12,9 @@ export function AppProviders({ children }: PropsWithChildren) {
     <QueryClientProvider client={queryClient}>
       <LocaleProvider>
         <GlobalErrorBoundary>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <LocationProvider>{children}</LocationProvider>
+          </AuthProvider>
         </GlobalErrorBoundary>
       </LocaleProvider>
     </QueryClientProvider>

@@ -1,16 +1,15 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import * as Location from 'expo-location';
 import { Link, type Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Linking, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 
 import { TourismMap } from '@/components/map/tourism-map';
 import { AppButton } from '@/components/ui/app-button';
 import { FeedbackState, LoadingState } from '@/components/ui/feedback-state';
 import { FilterChip } from '@/components/ui/filter-chip';
 import { RatingDisplay } from '@/components/ui/rating-display';
-import { StatusCard } from '@/components/ui/status-card';
 import { useLocale } from '@/providers/locale-provider';
+import { useAppLocation } from '@/providers/location-provider';
 import { getTourismCategories } from '@/services/catalog/category-service';
 import {
   getNearbyTourismPlaces,
@@ -22,14 +21,13 @@ import {
   type RouteCoordinate,
   type RouteProfile,
 } from '@/services/routes/route-service';
-import { brandColors, colors, layout, spacing } from '@/theme';
+import { brandColors, colors, layout, shadows, spacing } from '@/theme';
 import { MANTA_CENTER } from '@/utils/geo';
-
-type LocationPermissionState =
-  'blocked' | 'checking' | 'denied' | 'error' | 'granted' | 'services-disabled' | 'undetermined';
 
 export function MapScreen() {
   const { locale, t } = useLocale();
+  const { height: viewportHeight } = useWindowDimensions();
+  const { permissionState, userLocation } = useAppLocation();
   const routeProfiles: { label: string; value: RouteProfile }[] = [
     { label: t('map.walking'), value: 'foot-walking' },
     { label: t('map.driving'), value: 'driving-car' },
@@ -37,23 +35,11 @@ export function MapScreen() {
   ];
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
-  const [userLocation, setUserLocation] = useState<RouteCoordinate | null>(null);
-  const [permissionState, setPermissionState] = useState<LocationPermissionState>('checking');
-  const [isLocating, setIsLocating] = useState(false);
   const [routeProfile, setRouteProfile] = useState<RouteProfile>('foot-walking');
   const [actionError, setActionError] = useState<string | null>(null);
-
-  useEffect(() => {
-    void Location.getForegroundPermissionsAsync()
-      .then((permission) => {
-        if (permission.granted) setPermissionState('granted');
-        else if (!permission.canAskAgain) setPermissionState('blocked');
-        else if (permission.status === Location.PermissionStatus.DENIED)
-          setPermissionState('denied');
-        else setPermissionState('undetermined');
-      })
-      .catch(() => setPermissionState('error'));
-  }, []);
+  const [mapOffsetY, setMapOffsetY] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const mapHeight = Math.max(500, Math.min(640, viewportHeight - 210));
 
   const categoriesQuery = useQuery({
     queryFn: () => getTourismCategories(locale),
@@ -113,54 +99,9 @@ export function MapScreen() {
     setSelectedPlaceId(placeId);
     routeMutation.reset();
     setActionError(null);
-  };
-
-  const requestCurrentLocation = async () => {
-    setActionError(null);
-    setIsLocating(true);
-
-    try {
-      let permission = await Location.getForegroundPermissionsAsync();
-      if (!permission.granted) {
-        if (!permission.canAskAgain) {
-          setPermissionState('blocked');
-          return;
-        }
-        permission = await Location.requestForegroundPermissionsAsync();
-      }
-
-      if (!permission.granted) {
-        setPermissionState(permission.canAskAgain ? 'denied' : 'blocked');
-        return;
-      }
-
-      setPermissionState('granted');
-      if (!(await Location.hasServicesEnabledAsync())) {
-        setPermissionState('services-disabled');
-        return;
-      }
-
-      const lastKnown = await Location.getLastKnownPositionAsync({
-        maxAge: 120_000,
-        requiredAccuracy: 1_000,
-      });
-      const location =
-        lastKnown ??
-        (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
-      const coordinates = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      };
-
-      setUserLocation(coordinates);
-      setSelectedPlaceId(null);
-      routeMutation.reset();
-    } catch {
-      setPermissionState('error');
-      setActionError(t('map.locationFetchError'));
-    } finally {
-      setIsLocating(false);
-    }
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ animated: true, y: Math.max(0, mapOffsetY - spacing.sm) });
+    });
   };
 
   const calculateRoute = () => {
@@ -188,29 +129,82 @@ export function MapScreen() {
 
   const placesPending = userLocation ? nearbyQuery.isPending : catalogQuery.isPending;
   const placesError = userLocation ? nearbyQuery.isError : catalogQuery.isError;
+  const locationIssue =
+    permissionState === 'blocked'
+      ? t('map.permissionBlockedDescription')
+      : permissionState === 'denied'
+        ? t('map.permissionDeniedDescription')
+        : permissionState === 'services-disabled'
+          ? t('map.servicesDisabledDescription')
+          : permissionState === 'error'
+            ? t('map.locationUnavailableDescription')
+            : null;
 
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{
         alignSelf: 'center',
-        gap: spacing.lg,
+        gap: spacing.md,
         maxWidth: layout.contentMaxWidth,
-        padding: spacing.lg,
+        padding: spacing.md,
         width: '100%',
       }}
+      ref={scrollRef}
       style={{ backgroundColor: colors.background }}
     >
-      <View style={{ gap: spacing.xs }}>
-        <Text selectable style={{ color: colors.label, fontSize: 24, fontWeight: '900' }}>
+      <View style={{ gap: 2 }}>
+        <Text selectable style={{ color: colors.label, fontSize: 18, fontWeight: '900' }}>
           {t('map.screenTitle')}
         </Text>
-        <Text selectable style={{ color: colors.secondaryLabel, fontSize: 15, lineHeight: 22 }}>
+        <Text
+          numberOfLines={1}
+          selectable
+          style={{ color: colors.secondaryLabel, fontSize: 12, lineHeight: 17 }}
+        >
           {t('map.screenDescription')}
         </Text>
       </View>
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+      {locationIssue ? (
+        <View
+          onLayout={(event) => setMapOffsetY(event.nativeEvent.layout.y)}
+          style={{
+            alignItems: 'center',
+            backgroundColor: colors.warningSurface,
+            borderRadius: 14,
+            flexDirection: 'row',
+            gap: spacing.sm,
+            paddingHorizontal: spacing.md,
+            paddingVertical: spacing.sm,
+          }}
+        >
+          <Text
+            numberOfLines={2}
+            selectable
+            style={{ color: colors.warning, flex: 1, fontSize: 12, lineHeight: 17 }}
+          >
+            {locationIssue}
+          </Text>
+          {permissionState === 'blocked' ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void Linking.openSettings()}
+              style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1, padding: spacing.sm })}
+            >
+              <Text style={{ color: brandColors.primary, fontSize: 12, fontWeight: '900' }}>
+                {t('map.openSettings')}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+
+      <ScrollView
+        contentContainerStyle={{ gap: spacing.sm, paddingRight: spacing.md }}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
         <FilterChip
           label={t('explore.all')}
           onPress={() => {
@@ -233,7 +227,7 @@ export function MapScreen() {
             selected={selectedCategoryId === category.id}
           />
         ))}
-      </View>
+      </ScrollView>
 
       {placesPending ? (
         <LoadingState label={t('map.placesLoading')} />
@@ -253,15 +247,158 @@ export function MapScreen() {
             borderRadius: 24,
             borderWidth: 1,
             overflow: 'hidden',
+            position: 'relative',
           }}
         >
           <TourismMap
+            height={mapHeight}
             onSelectPlace={selectPlace}
             places={mapPlaces}
             routeCoordinates={routeMutation.data?.coordinates ?? []}
             selectedPlaceId={selectedPlaceId}
             userLocation={userLocation}
           />
+
+          {selectedPlace ? (
+            <View
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.97)',
+                borderColor: colors.separator,
+                borderCurve: 'continuous',
+                borderRadius: 18,
+                borderWidth: 1,
+                boxShadow: shadows.floating,
+                gap: spacing.sm,
+                left: spacing.md,
+                padding: spacing.md,
+                position: 'absolute',
+                right: spacing.md,
+                top: spacing.md,
+                zIndex: 1000,
+              }}
+            >
+              <View style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.sm }}>
+                <View
+                  style={{
+                    backgroundColor:
+                      categoryFor(selectedPlace)?.color ?? selectedPlace.categoryColor,
+                    borderRadius: 999,
+                    height: 10,
+                    width: 10,
+                  }}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    numberOfLines={1}
+                    selectable
+                    style={{ color: colors.label, fontSize: 17, fontWeight: '900' }}
+                  >
+                    {selectedPlace.name}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    selectable
+                    style={{ color: colors.secondaryLabel, fontSize: 11, fontWeight: '800' }}
+                  >
+                    {(categoryFor(selectedPlace)?.name ?? selectedPlace.categorySlug).toUpperCase()}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityLabel={t('common.close')}
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={() => {
+                    setSelectedPlaceId(null);
+                    routeMutation.reset();
+                  }}
+                  style={({ pressed }) => ({
+                    alignItems: 'center',
+                    height: 36,
+                    justifyContent: 'center',
+                    opacity: pressed ? 0.55 : 1,
+                    width: 36,
+                  })}
+                >
+                  <Text style={{ color: colors.secondaryLabel, fontSize: 24, lineHeight: 26 }}>
+                    ×
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.md }}>
+                <RatingDisplay value={selectedPlace.averageRating ?? 0} />
+                <Text
+                  numberOfLines={1}
+                  selectable
+                  style={{ color: colors.secondaryLabel, flex: 1, fontSize: 12 }}
+                >
+                  {selectedPlace.address}
+                </Text>
+                {routeMutation.data ? (
+                  <Text
+                    selectable
+                    style={{ color: brandColors.deepTeal, fontSize: 12, fontWeight: '900' }}
+                  >
+                    {formatDistance(routeMutation.data.distanceMeters)} ·{' '}
+                    {formatDuration(routeMutation.data.durationSeconds)}
+                  </Text>
+                ) : null}
+              </View>
+
+              <ScrollView
+                contentContainerStyle={{ gap: spacing.sm }}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+              >
+                {routeProfiles.map((profile) => (
+                  <FilterChip
+                    key={profile.value}
+                    label={profile.label}
+                    onPress={() => {
+                      setRouteProfile(profile.value);
+                      routeMutation.reset();
+                    }}
+                    selected={routeProfile === profile.value}
+                  />
+                ))}
+              </ScrollView>
+
+              <ScrollView
+                contentContainerStyle={{ gap: spacing.sm }}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+              >
+                <View style={{ width: 150 }}>
+                  <AppButton
+                    label={t('map.calculate')}
+                    loading={routeMutation.isPending}
+                    onPress={calculateRoute}
+                  />
+                </View>
+                <View style={{ width: 170 }}>
+                  <AppButton
+                    label={t('map.openGoogle')}
+                    onPress={() =>
+                      void openExternalUrl(buildGoogleMapsUrl(selectedPlace, routeProfile))
+                    }
+                    variant="secondary"
+                  />
+                </View>
+                <View style={{ width: 130 }}>
+                  <AppButton
+                    label={t('map.openWaze')}
+                    onPress={() => void openExternalUrl(buildWazeUrl(selectedPlace))}
+                    variant="secondary"
+                  />
+                </View>
+                <View style={{ width: 150 }}>
+                  <Link href={`/place/${selectedPlace.id}` as Href} asChild>
+                    <AppButton label={t('map.openDetails')} variant="ghost" />
+                  </Link>
+                </View>
+              </ScrollView>
+            </View>
+          ) : null}
         </View>
       )}
 
@@ -297,250 +434,26 @@ export function MapScreen() {
         </ScrollView>
       ) : null}
 
-      <LocationPanel
-        isLocating={isLocating}
-        onOpenSettings={() => void Linking.openSettings()}
-        onRequestLocation={() => void requestCurrentLocation()}
-        permissionState={permissionState}
-        userLocation={userLocation}
-      />
-
       {userLocation && !isWithinManta(userLocation) ? (
-        <StatusCard
-          accent={brandColors.sun}
-          description={t('map.outsideDescription')}
-          title={t('map.outsideTitle')}
-        />
+        <Text selectable style={{ color: colors.warning, fontSize: 12 }}>
+          {t('map.outsideDescription')}
+        </Text>
       ) : null}
 
-      {userLocation && nearbyQuery.isSuccess ? (
-        <StatusCard
-          description={`${places.length} ${t('map.nearbyFound')}`}
-          title={t('map.nearbyUpdated')}
+      {routeMutation.isError ? (
+        <FeedbackState
+          actionLabel={t('common.retry')}
+          description={routeMutation.error.message}
+          onAction={calculateRoute}
+          title={t('map.routeError')}
+          tone="error"
         />
       ) : null}
-
-      {selectedPlace ? (
-        <View
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.separator,
-            borderCurve: 'continuous',
-            borderRadius: 22,
-            borderWidth: 1,
-            gap: spacing.md,
-            padding: spacing.lg,
-          }}
-        >
-          <View style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.sm }}>
-            <View
-              style={{
-                backgroundColor: categoryFor(selectedPlace)?.color ?? selectedPlace.categoryColor,
-                borderRadius: 999,
-                height: 11,
-                width: 11,
-              }}
-            />
-            <Text style={{ color: colors.secondaryLabel, fontSize: 12, fontWeight: '800' }}>
-              {(categoryFor(selectedPlace)?.name ?? selectedPlace.categorySlug).toUpperCase()}
-            </Text>
-          </View>
-          <Text selectable style={{ color: colors.label, fontSize: 22, fontWeight: '900' }}>
-            {selectedPlace.name}
-          </Text>
-          <Text selectable style={{ color: colors.secondaryLabel, fontSize: 14, lineHeight: 21 }}>
-            {selectedPlace.shortDescription}
-          </Text>
-          <RatingDisplay value={selectedPlace.averageRating ?? 0} />
-          <Text selectable style={{ color: brandColors.primary, fontSize: 13, fontWeight: '700' }}>
-            {selectedPlace.address}
-          </Text>
-          {selectedPlace.distanceMeters !== undefined ? (
-            <Text selectable style={{ color: colors.secondaryLabel, fontSize: 13 }}>
-              {formatDistance(selectedPlace.distanceMeters)} {t('map.distanceFromYou')}
-            </Text>
-          ) : null}
-
-          <Text selectable style={{ color: colors.label, fontSize: 15, fontWeight: '800' }}>
-            {t('map.routePreview')}
-          </Text>
-          <Text selectable style={{ color: colors.secondaryLabel, fontSize: 13, lineHeight: 19 }}>
-            {t('map.origin')}:{' '}
-            {userLocation && isWithinManta(userLocation)
-              ? t('map.currentOrigin')
-              : t('map.mantaOrigin')}
-            .
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {routeProfiles.map((profile) => (
-              <FilterChip
-                key={profile.value}
-                label={profile.label}
-                onPress={() => {
-                  setRouteProfile(profile.value);
-                  routeMutation.reset();
-                }}
-                selected={routeProfile === profile.value}
-              />
-            ))}
-          </View>
-          <AppButton
-            label={t('map.calculate')}
-            loading={routeMutation.isPending}
-            onPress={calculateRoute}
-          />
-          {routeMutation.isError ? (
-            <FeedbackState
-              actionLabel={t('common.retry')}
-              description={routeMutation.error.message}
-              onAction={calculateRoute}
-              title={t('map.routeError')}
-              tone="error"
-            />
-          ) : null}
-          {routeMutation.data ? (
-            <View
-              style={{
-                backgroundColor: brandColors.sand,
-                borderRadius: 18,
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                gap: spacing.lg,
-                padding: spacing.md,
-              }}
-            >
-              <RouteMetric
-                label={t('map.distanceMetric')}
-                value={formatDistance(routeMutation.data.distanceMeters)}
-              />
-              <RouteMetric
-                label={t('map.durationMetric')}
-                value={formatDuration(routeMutation.data.durationSeconds)}
-              />
-            </View>
-          ) : null}
-
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            <View style={{ flexGrow: 1, minWidth: 190 }}>
-              <AppButton
-                label={t('map.openGoogle')}
-                onPress={() =>
-                  void openExternalUrl(buildGoogleMapsUrl(selectedPlace, routeProfile))
-                }
-                variant="secondary"
-              />
-            </View>
-            <View style={{ flexGrow: 1, minWidth: 160 }}>
-              <AppButton
-                label={t('map.openWaze')}
-                onPress={() => void openExternalUrl(buildWazeUrl(selectedPlace))}
-                variant="secondary"
-              />
-            </View>
-            <View style={{ flexGrow: 1, minWidth: 160 }}>
-              <Link href={`/place/${selectedPlace.id}` as Href} asChild>
-                <AppButton label={t('map.openDetails')} variant="ghost" />
-              </Link>
-            </View>
-          </View>
-        </View>
-      ) : (
-        <StatusCard
-          description={t('map.destinationDescription')}
-          title={t('map.destinationTitle')}
-        />
-      )}
 
       {actionError ? (
         <FeedbackState description={actionError} title={t('map.actionError')} tone="error" />
       ) : null}
     </ScrollView>
-  );
-}
-
-function LocationPanel({
-  isLocating,
-  onOpenSettings,
-  onRequestLocation,
-  permissionState,
-  userLocation,
-}: {
-  isLocating: boolean;
-  onOpenSettings: () => void;
-  onRequestLocation: () => void;
-  permissionState: LocationPermissionState;
-  userLocation: RouteCoordinate | null;
-}) {
-  const { t } = useLocale();
-  return (
-    <View
-      style={{
-        backgroundColor: colors.surface,
-        borderColor: colors.separator,
-        borderCurve: 'continuous',
-        borderRadius: 22,
-        borderWidth: 1,
-        gap: spacing.md,
-        padding: spacing.lg,
-      }}
-    >
-      <Text selectable style={{ color: colors.label, fontSize: 19, fontWeight: '900' }}>
-        {t('map.nearYou')}
-      </Text>
-      <Text selectable style={{ color: colors.secondaryLabel, fontSize: 14, lineHeight: 21 }}>
-        {t('map.privacyDescription')}
-      </Text>
-      <AppButton
-        label={userLocation ? t('map.updateLocation') : t('map.useLocation')}
-        loading={isLocating}
-        onPress={onRequestLocation}
-        variant="secondary"
-      />
-      {permissionState === 'denied' ? (
-        <StatusCard
-          accent={brandColors.sun}
-          description={t('map.permissionDeniedDescription')}
-          title={t('map.permissionDeniedTitle')}
-        />
-      ) : null}
-      {permissionState === 'blocked' ? (
-        <View style={{ gap: spacing.sm }}>
-          <StatusCard
-            accent={brandColors.sun}
-            description={t('map.permissionBlockedDescription')}
-            title={t('map.permissionBlockedTitle')}
-          />
-          <AppButton label={t('map.openSettings')} onPress={onOpenSettings} variant="ghost" />
-        </View>
-      ) : null}
-      {permissionState === 'services-disabled' ? (
-        <StatusCard
-          accent={brandColors.sun}
-          description={t('map.servicesDisabledDescription')}
-          title={t('map.servicesDisabledTitle')}
-        />
-      ) : null}
-      {permissionState === 'error' ? (
-        <StatusCard
-          accent={colors.error}
-          description={t('map.locationUnavailableDescription')}
-          title={t('map.locationUnavailableTitle')}
-        />
-      ) : null}
-    </View>
-  );
-}
-
-function RouteMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={{ flexGrow: 1, gap: spacing.xs, minWidth: 130 }}>
-      <Text selectable style={{ color: brandColors.deepTeal, fontSize: 19, fontWeight: '900' }}>
-        {value}
-      </Text>
-      <Text selectable style={{ color: colors.secondaryLabel, fontSize: 12 }}>
-        {label}
-      </Text>
-    </View>
   );
 }
 

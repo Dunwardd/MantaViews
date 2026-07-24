@@ -13,6 +13,7 @@ const MANTA_REGION: Region = {
 };
 
 export function TourismMap({
+  height = 420,
   onSelectPlace,
   places,
   routeCoordinates,
@@ -46,7 +47,7 @@ export function TourismMap({
       mapPadding={{ bottom: 10, left: 10, right: 10, top: 10 }}
       ref={mapRef}
       showsCompass
-      style={{ height: 420, width: '100%' }}
+      style={{ height, width: '100%' }}
     >
       {places.map((place) => (
         <Marker
