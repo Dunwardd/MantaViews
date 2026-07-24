@@ -400,6 +400,9 @@ verify_jwt = false
 [functions.admin-reports]
 verify_jwt = false
 
+[functions.admin-dashboard]
+verify_jwt = false
+
 [functions.resolve-report]
 verify_jwt = false
 

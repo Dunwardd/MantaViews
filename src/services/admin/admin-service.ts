@@ -3,6 +3,44 @@ import { getPublicAvatarUrl, getSignedPlaceImageUrls } from '@/services/storage/
 
 export type ContentStatus = 'archived' | 'pending' | 'published' | 'rejected';
 
+export type AdminDashboardData = {
+  categoryBreakdown: { color: string; count: number; id: number; name: string }[];
+  catalogStatus: { count: number; status: ContentStatus }[];
+  generatedAt: string;
+  growth30d: {
+    favorites: number;
+    newPlaces: number;
+    newUsers: number;
+    reports: number;
+    reviews: number;
+    suggestions: number;
+  };
+  metrics: {
+    averageRating: number;
+    favorites: number;
+    publishedPlaces: number;
+    publishedReviews: number;
+    registeredUsers: number;
+    touristicPercentage: number;
+    touristVotes: number;
+  };
+  pending: {
+    images: number;
+    places: number;
+    reports: number;
+    suggestions: number;
+  };
+  ratingDistribution: { count: number; rating: number }[];
+  recentActivity: {
+    at: string;
+    detail: string;
+    id: string;
+    label: string;
+    tone: 'admin' | 'alert' | 'catalog' | 'community' | 'moderation';
+  }[];
+  suggestionStatus: { count: number; status: ContentStatus }[];
+};
+
 export type AdminPlaceTranslation = {
   description: string;
   locale: 'en' | 'es';
@@ -95,28 +133,7 @@ export type AdminPlaceInput = {
 };
 
 export async function getAdminSummary() {
-  const client = getSupabaseClient();
-  const queries = [
-    client.from('places').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-    client
-      .from('place_suggestions')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'pending'),
-    client
-      .from('place_images')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'pending'),
-    client.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'open'),
-  ] as const;
-  const results = await Promise.all(queries);
-  const error = results.find((result) => result.error)?.error;
-  if (error) throw error;
-  return {
-    images: results[2].count ?? 0,
-    places: results[0].count ?? 0,
-    reports: results[3].count ?? 0,
-    suggestions: results[1].count ?? 0,
-  };
+  return invokeAdmin<AdminDashboardData>('admin-dashboard', { method: 'GET' });
 }
 
 export async function getAdminPlaces() {

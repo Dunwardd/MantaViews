@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Alert, Platform, ScrollView, Text, View } from 'react-native';
+import { Alert, AppState, Platform, ScrollView, Text, View } from 'react-native';
 
 import { AdminCoordinateMap } from '@/components/admin/admin-coordinate-map';
+import { AdminDashboardSummary } from '@/components/admin/admin-dashboard-summary';
 import { AuthNotice } from '@/components/auth/auth-notice';
 import { AppButton } from '@/components/ui/app-button';
 import { AppAvatar } from '@/components/ui/app-avatar';
@@ -29,6 +30,7 @@ import {
   type ContentStatus,
 } from '@/services/admin/admin-service';
 import { getTourismCategories } from '@/services/catalog/category-service';
+import { getSupabaseClient } from '@/services/supabase/client';
 import { brandColors, colors, spacing, typography } from '@/theme';
 
 type Section = 'summary' | 'places' | 'suggestions' | 'moderation' | 'reports';
@@ -51,7 +53,11 @@ function isPendingAction<TVariables>(
 export function AdminDashboardScreen() {
   const [section, setSection] = useState<Section>('summary');
   const queryClient = useQueryClient();
-  const summaryQuery = useQuery({ queryFn: getAdminSummary, queryKey: ['admin', 'summary'] });
+  const summaryQuery = useQuery({
+    queryFn: getAdminSummary,
+    queryKey: ['admin', 'summary'],
+    refetchInterval: 60_000,
+  });
   const placesQuery = useQuery({
     enabled: section === 'places',
     queryFn: getAdminPlaces,
@@ -79,6 +85,34 @@ export function AdminDashboardScreen() {
       ...keys.map((key) => queryClient.invalidateQueries({ queryKey: ['admin', key] })),
     ]);
   };
+
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+    const refreshDashboard = () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin'] });
+    };
+    const channel = supabase
+      .channel('admin-dashboard-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+        },
+        refreshDashboard,
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') refreshDashboard();
+      });
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refreshDashboard();
+    });
+
+    return () => {
+      appStateSubscription.remove();
+      void supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   return (
     <ScrollView
@@ -165,24 +199,13 @@ function SummarySection({
 }) {
   if (query.isPending) return <LoadingState label="Calculando pendientes…" />;
   if (query.isError) return <QueryError onRetry={() => void query.refetch()} />;
-  const cards: { count: number; label: string; section: Section }[] = [
-    { count: query.data.places, label: 'Lugares pendientes', section: 'places' },
-    { count: query.data.suggestions, label: 'Sugerencias nuevas', section: 'suggestions' },
-    { count: query.data.images, label: 'Fotografías pendientes', section: 'moderation' },
-    { count: query.data.reports, label: 'Reportes abiertos', section: 'reports' },
-  ];
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
-      {cards.map((card) => (
-        <SurfaceCard key={card.label} style={{ flexBasis: 230, flexGrow: 1 }}>
-          <Text style={{ color: brandColors.primary, fontSize: 34, fontWeight: '900' }}>
-            {card.count}
-          </Text>
-          <Text style={{ ...typography.bodyStrong, color: colors.label }}>{card.label}</Text>
-          <AppButton label="Revisar" onPress={() => onNavigate(card.section)} variant="secondary" />
-        </SurfaceCard>
-      ))}
-    </View>
+    <AdminDashboardSummary
+      data={query.data}
+      isRefreshing={query.isFetching}
+      onNavigate={onNavigate}
+      onRefresh={() => void query.refetch()}
+    />
   );
 }
 
