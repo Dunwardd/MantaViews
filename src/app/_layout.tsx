@@ -2,6 +2,7 @@ import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
+import { AppBackButton } from '@/components/navigation/app-back-button';
 import { AppProviders } from '@/providers/app-providers';
 import { useLocale } from '@/providers/locale-provider';
 import { brandColors, colors } from '@/theme/colors';
@@ -33,23 +34,47 @@ function RootNavigation() {
       <Stack
         screenOptions={{
           headerBackButtonDisplayMode: 'minimal',
-          headerTintColor: brandColors.primary,
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: brandColors.deepTeal,
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-        <Stack.Screen name="place/[id]" options={{ title: t('navigation.placeDetail') }} />
+        <Stack.Screen
+          name="place/[id]"
+          options={{
+            headerLeft: () => <AppBackButton fallback="/(tabs)" />,
+            title: t('navigation.placeDetail'),
+          }}
+        />
         <Stack.Screen
           name="account-settings"
-          options={{ title: t('navigation.accountSettings') }}
+          options={{
+            headerLeft: () => <AppBackButton fallback="/(tabs)/profile" />,
+            title: t('navigation.accountSettings'),
+          }}
         />
-        <Stack.Screen name="suggestions" options={{ title: t('navigation.suggestions') }} />
-        <Stack.Screen name="admin" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="suggestions"
+          options={{
+            headerLeft: () => <AppBackButton fallback="/(tabs)/profile" />,
+            title: t('navigation.suggestions'),
+          }}
+        />
+        <Stack.Screen
+          name="admin"
+          options={{
+            headerLeft: () => <AppBackButton fallback="/(tabs)/profile" />,
+            title: t('navigation.admin'),
+          }}
+        />
         <Stack.Screen
           name="preferences"
           options={{
+            headerLeft: () => <AppBackButton fallback="/(tabs)/profile" />,
             presentation: 'modal',
             title: t('preferences.title'),
           }}

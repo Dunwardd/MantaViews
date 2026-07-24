@@ -2,7 +2,15 @@ import { Image } from 'expo-image';
 import { Text } from 'react-native';
 
 type AppIconName =
-  'compass' | 'map' | 'heart' | 'profile' | 'settings' | 'star' | 'warning' | 'refresh';
+  | 'back'
+  | 'compass'
+  | 'map'
+  | 'heart'
+  | 'profile'
+  | 'settings'
+  | 'star'
+  | 'warning'
+  | 'refresh';
 
 type AppIconProps = {
   color: string;
@@ -12,6 +20,7 @@ type AppIconProps = {
 };
 
 const symbols: Record<AppIconName, { sf: string; fallback: string }> = {
+  back: { sf: 'chevron.backward', fallback: '‹' },
   compass: { sf: 'safari', fallback: '⌖' },
   map: { sf: 'map', fallback: '◇' },
   heart: { sf: 'heart', fallback: '♡' },
